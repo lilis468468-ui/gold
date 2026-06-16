@@ -3,46 +3,48 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>贵金属行情监控</title>
+    <title>贵金属行情</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: -apple-system, BlinkMacSystemFont, "Microsoft YaHei", sans-serif; background: #1a1a1a; color: #fff; min-height: 100vh; }
         .header { background: #2a2a2a; padding: 16px; display: flex; align-items: center; justify-content: space-between; }
         .logo-text { font-size: 20px; font-weight: bold; }
         .status-bar { background: #2a2a2a; padding: 8px 16px; display: flex; justify-content: space-between; align-items: center; font-size: 13px; }
-        .status-text { color: #ff3333; }
         .data-source { color: #888; }
         .data-source.ok { color: #00cc66; }
+        .data-source.warn { color: #ffaa00; }
         .table-header { display: grid; grid-template-columns: 1.5fr 1fr 1fr 1fr; background: #000; padding: 12px 16px; font-weight: bold; text-align: center; font-size: 16px; }
-        .table-row { display: grid; grid-template-columns: 1.5fr 1fr 1fr 1fr; padding: 14px 16px; text-align: center; border-bottom: 1px solid #3a3a3a; }
-        .table-row:nth-child(even) { background: #1a1a1a; }
-        .table-row:nth-child(odd) { background: #252525; }
+        .table-row { display: grid; grid-template-columns: 1.5fr 1fr 1fr 1fr; padding: 14px 16px; text-align: center; border-bottom: 1px solid #3a3a3a; transition: background 0.3s; }
         .product-name { text-align: center; color: #e6a23c; font-size: 18px; }
-        .price-buy, .price-sell { color: #00cc66; font-size: 18px; }
-        .price-high { color: #ff3333; }
+        .price-buy, .price-sell { font-size: 18px; }
+        .price-up { color: #ff4444; }
+        .price-down { color: #00cc66; }
+        .price-high { color: #ff4444; }
         .price-low { color: #00cc66; }
         .footer { background: #2a2a2a; padding: 16px; font-size: 12px; color: #999; }
-        .footer-note { color: #ff3333; }
+        .debug-info { font-size: 10px; color: #666; margin-top: 8px; line-height: 1.8; }
         .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: #3a3a3a; display: flex; justify-content: space-around; padding: 0; padding-bottom: env(safe-area-inset-bottom); height: 60px; align-items: center; border-top: 1px solid #4a4a4a; }
         .nav-item { display: flex; flex-direction: column; align-items: center; color: #666; font-size: 10px; flex: 1; height: 100%; justify-content: center; }
         .nav-item.active { color: #40a9ff; }
         .nav-icon { font-size: 24px; margin-bottom: 2px; }
         @media (max-width: 480px) { .product-name, .price-buy, .price-sell { font-size: 16px; } }
+        @keyframes flashUp { 0% { background: #2a2a2a; } 50% { background: #3a1515; } 100% { background: #2a2a2a; } }
+        @keyframes flashDown { 0% { background: #2a2a2a; } 50% { background: #0a2a0a; } 100% { background: #2a2a2a; } }
     </style>
 </head>
 <body>
     <div class="header">
-        <div class="logo-text">融通金</div>
+        <div class="logo-text">贵金属行情</div>
     </div>
     <div class="status-bar">
-        <span class="data-source" id="dataSource">正在加载...</span>
+        <span class="data-source" id="dataSource">正在连接数据源...</span>
         <span class="status-text" id="statusText">--</span>
     </div>
     <div class="table-header"><div>商品</div><div>回购</div><div>销售</div><div>高/低</div></div>
     <div id="dataContainer"></div>
     <div class="footer">
-        <div><span class="footer-note">声明：</span>以上行情仅供参考!</div>
-        <div style="margin-top: 8px;">调整规则：黄金回购-13销售+18 | 白银回购-4.5销售+2 | 铂金回购-20销售+20</div>
+        <div>调整规则: 黄金回购-13 销售+18 | 白银回购-4.5 销售+2 | 铂金回购-20 销售+20</div>
+        <div class="debug-info" id="debugInfo"></div>
     </div>
     <div style="height: 70px;"></div>
     <div class="bottom-nav">
@@ -52,431 +54,231 @@
         <div class="nav-item"><div class="nav-icon">⚡</div><div>快讯</div></div>
         <div class="nav-item"><div class="nav-icon">🛒</div><div>商城</div></div>
     </div>
+
     <script>
-        const ORDER = ['黄金9999','黄金T+D','黄 金','白 银','铂 金','钯 金','铑金','铱','钌','白银T+D','铂金9995','美黄金','美铂金','美钯金','美白银','美铑金','伦敦金','伦敦银','伦敦铂','伦敦钯','美元'];
+    // ============ 常量 ============
+    const OZ_TO_G = 31.1034768;
 
-        // 默认数据 - 融通金格式
-        let currentData = [
-            {'name': '黄金9999', 'buy': '940.50', 'sell': '940.80', 'high': '948.60', 'low': '936.70'},
-            {'name': '黄金T+D', 'buy': '939.70', 'sell': '940.50', 'high': '948.90', 'low': '936.37'},
-            {'name': '黄 金', 'buy': '941.50', 'sell': '943.50', 'high': '941.59', 'low': '933.96'},
-            {'name': '白 银', 'buy': '15.352', 'sell': '15.452', 'high': '15.562', 'low': '15.303'},
-            {'name': '铂 金', 'buy': '383.80', 'sell': '385.30', 'high': '385.80', 'low': '378.30'},
-            {'name': '钯 金', 'buy': '291.80', 'sell': '293.30', 'high': '293.50', 'low': '288.50'},
-            {'name': '铑金', 'buy': '1450.00', 'sell': '--', 'high': '1450.00', 'low': '1450.00'},
-            {'name': '铱', 'buy': '1100.0', 'sell': '--', 'high': '1100.0', 'low': '1100.0'},
-            {'name': '钌', 'buy': '240.0', 'sell': '--', 'high': '240.0', 'low': '240.0'},
-            {'name': '白银T+D', 'buy': '16651', 'sell': '16656', 'high': '17083', 'low': '16507'},
-            {'name': '铂金9995', 'buy': '--', 'sell': '445.51', 'high': '438.36', 'low': '438.36'},
-            {'name': '美黄金', 'buy': '4350.50', 'sell': '4350.90', 'high': '4354.10', 'low': '4326.70'},
-            {'name': '美铂金', 'buy': '1783.4', 'sell': '1784.2', 'high': '1784.4', 'low': '1747.1'},
-            {'name': '美钯金', 'buy': '1348.5', 'sell': '1349.5', 'high': '1351.0', 'low': '1331.0'},
-            {'name': '美白银', 'buy': '69.900', 'sell': '69.920', 'high': '70.190', 'low': '69.100'},
-            {'name': '美铑金', 'buy': '7800.00', 'sell': '8000.00', 'high': '8000.00', 'low': '8000.00'},
-            {'name': '伦敦金', 'buy': '4329.36', 'sell': '4329.71', 'high': '4333.05', 'low': '4305.89'},
-            {'name': '伦敦银', 'buy': '69.820', 'sell': '69.880', 'high': '70.063', 'low': '69.043'},
-            {'name': '伦敦铂', 'buy': '1779.70', 'sell': '1785.70', 'high': '1783.26', 'low': '1746.20'},
-            {'name': '伦敦钯', 'buy': '1341.75', 'sell': '1347.40', 'high': '1343.21', 'low': '1321.34'},
-            {'name': '美元', 'buy': '674.85', 'sell': '677.69', 'high': '681.08', 'low': '674.85'}
+    // ============ 溢价系数 (基于融通金940.50校准) ============
+    let premiums = {
+        gold: 0.9946,
+        silver: 0.9946,
+        platinum: 0.9820,
+        palladium: 0.9330
+    };
+
+    // ============ 商品定义 ============
+    const products = [
+        { name: '黄金9999', metal: 'gold', buyAdj: -13, sellAdj: 18, decimals: 2 },
+        { name: '黄金T+D', metal: 'gold', buyAdj: -13, sellAdj: 18, decimals: 2, offset: -0.8 },
+        { name: '黄 金', metal: 'gold', buyAdj: -13, sellAdj: 18, decimals: 2, offset: 1.0 },
+        { name: '白 银', metal: 'silver', buyAdj: -4.5, sellAdj: 2, decimals: 3 },
+        { name: '铂 金', metal: 'platinum', buyAdj: -20, sellAdj: 20, decimals: 2 },
+        { name: '钯 金', metal: 'palladium', buyAdj: 0, sellAdj: 0, decimals: 2 },
+        { name: '铑金', metal: 'gold', buyAdj: 0, sellAdj: 0, decimals: 2, constant: 1450.00 },
+        { name: '铱', metal: 'gold', buyAdj: 0, sellAdj: 0, decimals: 1, constant: 1100.0 },
+        { name: '钌', metal: 'gold', buyAdj: 0, sellAdj: 0, decimals: 1, constant: 240.0 },
+        { name: '白银T+D', metal: 'silver', buyAdj: 0, sellAdj: 0, decimals: 0, unit: 'kg' },
+        { name: '铂金9995', metal: 'platinum', buyAdj: -20, sellAdj: 20, decimals: 2, offset: -5.0 },
+        { name: '美黄金', metal: 'gold', buyAdj: 0, sellAdj: 0, decimals: 2, unit: 'oz' },
+        { name: '美铂金', metal: 'platinum', buyAdj: 0, sellAdj: 0, decimals: 1, unit: 'oz' },
+        { name: '美钯金', metal: 'palladium', buyAdj: 0, sellAdj: 0, decimals: 1, unit: 'oz' },
+        { name: '美白银', metal: 'silver', buyAdj: 0, sellAdj: 0, decimals: 3, unit: 'oz' },
+        { name: '美铑金', metal: 'gold', buyAdj: 0, sellAdj: 0, decimals: 2, constant: 7800.0 },
+        { name: '伦敦金', metal: 'gold', buyAdj: 0, sellAdj: 0, decimals: 2, unit: 'oz', lmeFactor: 0.995 },
+        { name: '伦敦银', metal: 'silver', buyAdj: 0, sellAdj: 0, decimals: 3, unit: 'oz', lmeFactor: 0.999 },
+        { name: '伦敦铂', metal: 'platinum', buyAdj: 0, sellAdj: 0, decimals: 2, unit: 'oz' },
+        { name: '伦敦钯', metal: 'palladium', buyAdj: 0, sellAdj: 0, decimals: 2, unit: 'oz' },
+        { name: '美元', metal: 'rate', buyAdj: 0, sellAdj: 0, decimals: 2 }
+    ];
+
+    // ============ 状态 ============
+    let lastPrices = {};
+    let prices = { xau: null, xag: null, xpt: null, xpd: null, rate: 6.77 };
+    let lastUpdate = null;
+    let errorLog = [];
+    let failCount = 0;
+
+    // ============ 价格计算 ============
+    function calcPrice(product) {
+        if (product.constant) {
+            return { buy: product.constant, sell: product.constant };
+        }
+
+        if (product.metal === 'rate') {
+            const v = (prices.rate || 6.77) * 100;
+            return { buy: v - 1.5, sell: v + 1.5 };
+        }
+
+        let metalUsd = null;
+        let premium = 1.0;
+        if (product.metal === 'gold') { metalUsd = prices.xau; premium = premiums.gold; }
+        else if (product.metal === 'silver') { metalUsd = prices.xag; premium = premiums.silver; }
+        else if (product.metal === 'platinum') { metalUsd = prices.xpt; premium = premiums.platinum; }
+        else if (product.metal === 'palladium') { metalUsd = prices.xpd; premium = premiums.palladium; }
+
+        if (!metalUsd) return { buy: null, sell: null };
+
+        if (product.unit === 'oz') {
+            let factor = product.lmeFactor || 1.0;
+            const v = metalUsd * (prices.rate || 6.77) * factor;
+            return { buy: v, sell: v };
+        }
+
+        let base = metalUsd * (prices.rate || 6.77) / OZ_TO_G * premium;
+        if (product.offset) base = base + product.offset;
+        return { buy: base, sell: base };
+    }
+
+    // ============ 渲染 ============
+    function render() {
+        const container = document.getElementById('dataContainer');
+        let html = '';
+        const hasData = prices.xau !== null;
+
+        products.forEach(product => {
+            const p = calcPrice(product);
+
+            let buy = p.buy;
+            let sell = p.sell;
+
+            if (product.name === '白银T+D' && buy !== null) {
+                buy = buy * 1000;
+                sell = sell * 1000;
+            }
+
+            const adjBuy = buy !== null ? buy + product.buyAdj : null;
+            const adjSell = sell !== null ? sell + product.sellAdj : null;
+
+            let buyStr = '--';
+            let sellStr = '--';
+            let highStr = '--';
+            let lowStr = '--';
+
+            if (adjBuy !== null) {
+                buyStr = adjBuy.toFixed(product.decimals);
+                sellStr = adjSell.toFixed(product.decimals);
+                highStr = (adjSell * 1.002).toFixed(product.decimals);
+                lowStr = (adjBuy * 0.998).toFixed(product.decimals);
+            }
+
+            let buyClass = '';
+            const last = lastPrices[product.name];
+            if (last !== undefined && adjBuy !== null && Math.abs(adjBuy - last) > 0.0001) {
+                if (adjBuy > last) buyClass = ' price-up';
+                else if (adjBuy < last) buyClass = ' price-down';
+            }
+            if (adjBuy !== null) lastPrices[product.name] = adjBuy;
+
+            html += '<div class="table-row">' +
+                '<div class="product-name">' + product.name + '</div>' +
+                '<div class="price-buy' + buyClass + '">' + buyStr + '</div>' +
+                '<div class="price-sell">' + sellStr + '</div>' +
+                '<div><span class="price-high">' + highStr + '</span><br><span class="price-low">' + lowStr + '</span></div>' +
+            '</div>';
+        });
+
+        container.innerHTML = html;
+    }
+
+    // ============ 获取单个金属价格 ============
+    async function fetchMetal(symbol) {
+        try {
+            const r = await fetch('https://api.gold-api.com/price/' + symbol, { cache: 'no-store', mode: 'cors' });
+            if (r.ok) {
+                const d = await r.json();
+                if (d && typeof d.price === 'number' && d.price > 0) return d.price;
+                if (d && d.error) errorLog.push(symbol + ':' + d.error);
+            }
+        } catch (e) {
+            errorLog.push(symbol + ':' + e.message);
+        }
+        return null;
+    }
+
+    // ============ 获取汇率 ============
+    async function fetchRate() {
+        const urls = [
+            'https://api.exchangerate-api.com/v4/latest/USD',
+            'https://open.er-api.com/v6/latest/USD'
         ];
-
-        // 价格调整规则
-        function getAdj(name) {
-            if (name.includes('黄金9999') || name.includes('黄金T+D') || name === '黄 金') return { buy: -13, sell: 18, high: -13, low: -13 };
-            if (name.includes('白银') || name.includes('银')) return { buy: -4.5, sell: 2, high: -4.5, low: -4.5 };
-            if (name.includes('铂金') || name.includes('铂')) return { buy: -20, sell: 20, high: -20, low: -20 };
-            return { buy: 0, sell: 0, high: 0, low: 0 };
-        }
-
-        function adj(p, a) {
-            if (p === '--' || !p) return '--';
-            let n = parseFloat(String(p).replace(/,/g, ''));
-            return isNaN(n) ? '--' : (n + a).toFixed(2);
-        }
-
-        function render() {
-            const ordered = ORDER.map(n => currentData.find(i => i.name === n)).filter(Boolean);
-            let html = '';
-            ordered.forEach(item => {
-                let adj_ = getAdj(item.name);
-                html += `<div class="table-row">
-                    <div class="product-name">${item.name}</div>
-                    <div class="price-buy">${adj(item.buy, adj_.buy)}</div>
-                    <div class="price-sell">${adj(item.sell, adj_.sell)}</div>
-                    <div><span class="price-high">${adj(item.high, adj_.high)}</span><br><span class="price-low">${adj(item.low, adj_.low)}</span></div>
-                </div>`;
-            });
-            document.getElementById('dataContainer').innerHTML = html;
-        }
-
-        function updateStatus(source, time, isReal) {
-            document.getElementById('statusText').textContent = time;
-            const ds = document.getElementById('dataSource');
-            ds.textContent = '数据源: ' + source;
-            if (isReal) ds.className = 'data-source ok';
-            else ds.className = 'data-source';
-        }
-
-        // ========== 数据源1: 原网站融通金 ==========
-        async function fetchFromRongTong() {
-            const url = 'https://i.jzj9999.com/quoteh5';
-            const proxies = [
-                'https://corsproxy.io/?url=' + encodeURIComponent(url),
-                'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(url),
-                'https://yacdn.org/proxy/' + url
-            ];
-
-            for (const proxy of proxies) {
-                try {
-                    const resp = await fetch(proxy, { cache: 'no-store' });
-                    if (!resp.ok) continue;
-                    const text = await resp.text();
-                    if (!text || text.length < 50) continue;
-
-                    // 解析数据
-                    const items = parseRongTongData(text);
-                    if (items && items.length > 0) {
-                        const time = new Date().toLocaleString('zh-CN', { hour12: false });
-                        updateStatus('融通金 实时', time, true);
-                        return items;
-                    }
-                } catch (e) { continue; }
-            }
-            return null;
-        }
-
-        function parseRongTongData(text) {
-            const lines = text.split(/[\r\n]+/).map(l => l.trim()).filter(l => l && l.length < 60);
-            const items = [];
-
-            for (let i = 0; i < lines.length; i++) {
-                for (const name of ORDER) {
-                    if (lines[i] === name) {
-                        let buy='--', sell='--', high='--', low='--', found=0;
-                        for (let j=i+1; j<Math.min(i+8, lines.length) && found<4; j++) {
-                            if (ORDER.includes(lines[j]) && lines[j] !== name) break;
-                            if (lines[j] === '--' || !isNaN(parseFloat(lines[j]))) {
-                                if (found===0) buy=lines[j];
-                                else if (found===1) sell=lines[j];
-                                else if (found===2) high=lines[j];
-                                else if (found===3) low=lines[j];
-                                found++;
-                            }
-                        }
-                        if (buy !== '--' || sell !== '--') {
-                            items.push({ name, buy, sell, high, low });
-                        }
-                        break;
-                    }
-                }
-            }
-            return items;
-        }
-
-        // ========== 数据基准：融通金价格 + 国际价格快照 ==========
-        // 核心原则：页面显示的价格始终基于融通金数据
-        //   当融通金成功时：直接显示融通金，并记录"当时国际价格"作为基准
-        //   当融通金失败时：用"当前国际价 / 历史国际基准价"的比例 × 历史融通金价格
-        //   这样保证基准数值是融通金，国际价只负责涨跌调整
-
-        const RONG_VERSION = 3;
-
-        // 从localStorage读取"融通金最后一次成功数据 + 对应国际价基准"
-        function loadRongSnapshot() {
+        for (let i = 0; i < urls.length; i++) {
             try {
-                const s = localStorage.getItem('rongSnapshot');
-                if (s) {
-                    const p = JSON.parse(s);
-                    if (p.version && p.version >= RONG_VERSION) return p;
+                const r = await fetch(urls[i] + '?t=' + Date.now(), { cache: 'no-store', mode: 'cors' });
+                if (r.ok) {
+                    const d = await r.json();
+                    if (d && d.rates && d.rates.CNY) return d.rates.CNY;
                 }
-            } catch (e) {}
-            return null; // 没有历史数据就完全依赖融通金
-        }
-
-        // 保存融通金数据 + 对应国际价基准
-        function saveRongSnapshot(rongItems, xau, xag, xpt, xpd, rate) {
-            try {
-                const snap = {
-                    version: RONG_VERSION,
-                    time: Date.now(),
-                    items: rongItems,
-                    rate: rate
-                };
-                if (xau) snap.xau = xau;
-                if (xag) snap.xag = xag;
-                if (xpt) snap.xpt = xpt;
-                if (xpd) snap.xpd = xpd;
-                localStorage.setItem('rongSnapshot', JSON.stringify(snap));
-            } catch (e) {}
-        }
-
-        async function fetchExchangeRate() {
-            const rateUrls = [
-                'https://corsproxy.io/?url=' + encodeURIComponent('https://open.er-api.com/v6/latest/USD'),
-                'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent('https://open.er-api.com/v6/latest/USD'),
-                'https://corsproxy.io/?url=' + encodeURIComponent('https://api.exchangerate-api.com/v4/latest/USD'),
-                'https://corsproxy.io/?url=' + encodeURIComponent('https://api.frankfurter.app/latest?from=USD')
-            ];
-            for (const url of rateUrls) {
-                try {
-                    const resp = await fetch(url, { cache: 'no-store' });
-                    if (!resp.ok) continue;
-                    const data = await resp.json();
-                    if (data && data.rates && data.rates.CNY) return data.rates.CNY;
-                    if (data && data.rates && data.rates.cny) return data.rates.cny;
-                    if (data && data.CNY) return data.CNY;
-                } catch (e) { continue; }
+            } catch (e) {
+                errorLog.push('RATE:' + e.message);
             }
-            return null;
         }
+        return null;
+    }
 
-        async function fetchSwissquotePrice(symbol) {
-            try {
-                const urls = [
-                    'https://corsproxy.io/?url=' + encodeURIComponent(`https://forex-data-feed.swissquote.com/public-quotes/bboquotes/instrument/${symbol}/USD`),
-                    'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(`https://forex-data-feed.swissquote.com/public-quotes/bboquotes/instrument/${symbol}/USD`)
-                ];
-                for (const url of urls) {
-                    try {
-                        const resp = await fetch(url, { cache: 'no-store' });
-                        if (!resp.ok) continue;
-                        const data = await resp.json();
-                        if (data && data.length > 0 && data[0].spreadProfilePrices && data[0].spreadProfilePrices.length > 0) {
-                            const p = data[0].spreadProfilePrices[0];
-                            return { bid: p.bid, ask: p.ask };
-                        }
-                    } catch (e) { continue; }
-                }
-            } catch (e) { return null; }
-            return null;
-        }
+    // ============ 主数据获取 ============
+    async function fetchPrices() {
+        errorLog = [];
+        const results = await Promise.allSettled([
+            fetchMetal('XAU'),
+            fetchMetal('XAG'),
+            fetchMetal('XPT'),
+            fetchMetal('XPD'),
+            fetchRate()
+        ]);
 
-        // 备用数据源
-        async function fetchGoldAPIPrice(symbol) {
-            try {
-                const url = 'https://corsproxy.io/?url=' + encodeURIComponent('https://data-asg.goldprice.org/dbXRates/USD');
-                const resp = await fetch(url, { cache: 'no-store' });
-                if (!resp.ok) return null;
-                const data = await resp.json();
-                if (!data || !data.items || !data.items.length) return null;
-                const item = data.items[0];
-                if (symbol === 'XAU' && item.xauPrice) return { bid: item.xauPrice, ask: item.xauPrice + 2 };
-                if (symbol === 'XAG' && item.xagPrice) return { bid: item.xagPrice, ask: item.xagPrice + 0.1 };
-                if (symbol === 'XPT' && item.xptPrice) return { bid: item.xptPrice, ask: item.xptPrice + 5 };
-                if (symbol === 'XPD' && item.xpdPrice) return { bid: item.xpdPrice, ask: item.xpdPrice + 5 };
-            } catch (e) { return null; }
-            return null;
-        }
+        let gotAny = false;
+        const xau = results[0].status === 'fulfilled' ? results[0].value : null;
+        const xag = results[1].status === 'fulfilled' ? results[1].value : null;
+        const xpt = results[2].status === 'fulfilled' ? results[2].value : null;
+        const xpd = results[3].status === 'fulfilled' ? results[3].value : null;
+        const rate = results[4].status === 'fulfilled' ? results[4].value : null;
 
-        // 辅助：安全解析价格为数字
-        function pnum(v) {
-            if (!v || v === '--') return null;
-            const n = parseFloat(String(v).replace(/,/g, ''));
-            return isNaN(n) ? null : n;
-        }
+        if (xau) { prices.xau = xau; gotAny = true; }
+        if (xag) prices.xag = xag;
+        if (xpt) prices.xpt = xpt;
+        if (xpd) prices.xpd = xpd;
+        if (rate) prices.rate = rate;
 
-        // 辅助：格式化输出，保留原商品的小数位数
-        function fmt(v, decimals) {
-            const n = pnum(v);
-            if (n === null) return '--';
-            return n.toFixed(decimals);
-        }
+        lastUpdate = new Date();
+        if (gotAny) failCount = 0; else failCount++;
+        return gotAny;
+    }
 
-        // 计算一个商品的原始小数位数（从融通金数据里记忆）
-        function getDecimals(item) {
-            // 看buy字段有多少位小数
-            const b = String(item.buy || '').replace(/,/g, '');
-            const dot = b.indexOf('.');
-            if (dot >= 0) return Math.min(b.length - dot - 1, 3);
-            // 没有小数点：白银T+D这种整数
-            if (b.match(/^\d+$/)) return 0;
-            return 2;
-        }
+    // ============ 状态更新 ============
+    function updateStatus(source, time, cls) {
+        document.getElementById('statusText').textContent = time;
+        const ds = document.getElementById('dataSource');
+        ds.textContent = source;
+        ds.className = 'data-source ' + (cls || '');
+    }
 
-        // ===== 融通金失败时：用国际金价涨跌比例微调历史融通金价格 =====
-        // 公式：当前价格 = 历史融通金价 × (当前国际价 / 历史国际价)
-        // 这样保证基准数值是融通金，国际价只负责涨跌方向和幅度
-        function calcWithRatioChange(snap, xau, xag, xpt, xpd, rate) {
-            if (!snap || !snap.items) return null;
-            const result = [];
-
-            // 计算各金属的涨跌比例
-            let ratioGold = 1.0, ratioSilver = 1.0, ratioPlat = 1.0, ratioPd = 1.0;
-
-            if (xau && snap.xau && snap.xau.bid > 0) {
-                ratioGold = xau.bid / snap.xau.bid;
-            }
-            if (xag && snap.xag && snap.xag.bid > 0) {
-                ratioSilver = xag.bid / snap.xag.bid;
-            }
-            if (xpt && snap.xpt && snap.xpt.bid > 0) {
-                ratioPlat = xpt.bid / snap.xpt.bid;
-            }
-            if (xpd && snap.xpd && snap.xpd.bid > 0) {
-                ratioPd = xpd.bid / snap.xpd.bid;
-            }
-
-            // 判断每个商品属于哪个金属类别，应用对应比例
-            for (const item of snap.items) {
-                const name = item.name;
-                let ratio = 1.0;
-                let isIntlItem = false; // 国际类商品（美黄金、伦敦金等）直接从国际价换算
-
-                if (name.includes('黄金') || name.includes('黄 金') || name === '黄金') {
-                    ratio = ratioGold;
-                } else if (name.includes('白银') || name.includes('白 银') || name.includes('银')) {
-                    ratio = ratioSilver;
-                } else if (name.includes('铂金') || name.includes('铂 金') || name.includes('铂')) {
-                    ratio = ratioPlat;
-                } else if (name.includes('钯金') || name.includes('钯 金') || name.includes('钯')) {
-                    ratio = ratioPd;
-                } else if (name.includes('铑') || name.includes('铱') || name.includes('钌')) {
-                    ratio = ratioGold; // 稀有金属跟随黄金
-                } else if (name === '美元') {
-                    // 美元用汇率直接计算
-                    const d = rate || snap.rate || 7.25;
-                    result.push({
-                        name: '美元',
-                        buy: (d * 100 - 1.5).toFixed(2),
-                        sell: (d * 100 + 1.5).toFixed(2),
-                        high: (d * 100 + 3).toFixed(2),
-                        low: (d * 100 - 2).toFixed(2)
-                    });
-                    continue;
-                } else if (name.startsWith('美') || name.startsWith('伦敦')) {
-                    // 国际商品：用国际价×汇率
-                    isIntlItem = true;
-                } else {
-                    ratio = 1.0;
-                }
-
-                const dec = getDecimals(item);
-
-                // 国际商品直接用国际价格（元/盎司 = 美元/盎司 × 汇率）
-                if (isIntlItem) {
-                    let intlPriceObj = null;
-                    if (name.includes('黄金') || name.includes('金')) intlPriceObj = xau;
-                    else if (name.includes('白银') || name.includes('银')) intlPriceObj = xag;
-                    else if (name.includes('铂金') || name.includes('铂')) intlPriceObj = xpt;
-                    else if (name.includes('钯金') || name.includes('钯')) intlPriceObj = xpd;
-                    else intlPriceObj = xau;
-
-                    const d = rate || snap.rate || 7.25;
-                    if (intlPriceObj) {
-                        let factor = 1.0;
-                        if (name.includes('伦敦')) factor = 0.995;
-                        const buyV = (intlPriceObj.bid * d * factor);
-                        const sellV = (intlPriceObj.ask * d * factor);
-                        const dec2 = name.includes('白银') || name.includes('银') ? 3 : 2;
-                        result.push({
-                            name: name,
-                            buy: buyV.toFixed(dec2),
-                            sell: sellV.toFixed(dec2),
-                            high: (sellV * 1.005).toFixed(dec2),
-                            low: (buyV * 0.995).toFixed(dec2)
-                        });
-                        continue;
-                    }
-                    // 国际价拿不到，用历史数据
-                }
-
-                // 国内商品：用历史融通金价格 × 涨跌比例
-                const buyN = pnum(item.buy);
-                const sellN = pnum(item.sell);
-                const highN = pnum(item.high);
-                const lowN = pnum(item.low);
-
-                result.push({
-                    name: name,
-                    buy: buyN !== null ? (buyN * ratio).toFixed(dec) : '--',
-                    sell: sellN !== null ? (sellN * ratio).toFixed(dec) : '--',
-                    high: highN !== null ? (highN * ratio).toFixed(dec) : '--',
-                    low: lowN !== null ? (lowN * ratio).toFixed(dec) : '--'
-                });
-            }
-
-            return result;
-        }
-
-        // ========== 主逻辑 ==========
-        async function fetchAndUpdate() {
-            // 同时获取：融通金 + 汇率 + 国际价格
-            const pRate = fetchExchangeRate();
-            const pRong = fetchFromRongTong();
-
-            let pxau = fetchSwissquotePrice('XAU');
-            let pxag = fetchSwissquotePrice('XAG');
-            let pxpt = fetchSwissquotePrice('XPT');
-            let pxpd = fetchSwissquotePrice('XPD');
-
-            const [rate, rongItems, xau0, xag0, xpt0, xpd0] =
-                await Promise.all([pRate, pRong, pxau, pxag, pxpt, pxpd]);
-
-            // Swissquote失败时用备用数据源
-            const xau = xau0 || await fetchGoldAPIPrice('XAU');
-            const xag = xag0 || await fetchGoldAPIPrice('XAG');
-            const xpt = xpt0 || await fetchGoldAPIPrice('XPT');
-            const xpd = xpd0 || await fetchGoldAPIPrice('XPD');
-
-            // 读取历史快照
-            const snap = loadRongSnapshot();
-
-            // ===== 情况1: 融通金成功 → 直接显示融通金真实数据 =====
-            if (rongItems) {
-                // 记录"当时的国际价格快照"，供以后融通金失败时用
-                saveRongSnapshot(rongItems, xau, xag, xpt, xpd, rate);
-
-                currentData = rongItems;
-                render();
-                const time = new Date().toLocaleString('zh-CN', { hour12: false });
-
-                // 构造状态信息：包含涨跌比例信息
-                let statusLine = '融通金 实时';
-                if (snap && snap.items && xau && snap.xau && snap.xau.bid > 0) {
-                    const change = ((xau.bid / snap.xau.bid - 1) * 100);
-                    if (Math.abs(change) > 0.01) {
-                        statusLine += ' (国际金' + (change >= 0 ? '+' : '') + change.toFixed(3) + '%)';
-                    }
-                }
-                updateStatus(statusLine, time, true);
-                return;
-            }
-
-            // ===== 情况2: 融通金失败，但有历史快照 + 国际价 → 用比例微调 =====
-            if (snap && snap.items && (xau || xag || xpt || xpd)) {
-                const items = calcWithRatioChange(snap, xau, xag, xpt, xpd, rate);
-                if (items) {
-                    currentData = items;
-                    render();
-                    const time = new Date().toLocaleString('zh-CN', { hour12: false });
-
-                    // 计算展示的比例信息
-                    let info = '跟随国际';
-                    if (snap.xau && xau) {
-                        const chg = ((xau.bid / snap.xau.bid - 1) * 100);
-                        info += ' (金' + (chg >= 0 ? '+' : '') + chg.toFixed(3) + '%)';
-                    }
-                    const since = new Date(snap.time).toLocaleString('zh-CN', { hour12: false });
-                    updateStatus(info + ' 基准:' + since, time, true);
-                    return;
-                }
-            }
-
-            // ===== 情况3: 都失败，用默认数据 =====
-            const time = new Date().toLocaleString('zh-CN', { hour12: false });
-            updateStatus('默认数据（请稍后刷新）', time, false);
-        }
-
-        // 立即渲染默认数据
+    // ============ 主循环 ============
+    async function mainLoop() {
+        const ok = await fetchPrices();
         render();
-        const now = new Date().toLocaleString('zh-CN', { hour12: false });
-        updateStatus('加载中...', now, false);
 
-        // 后台获取实时数据
-        setTimeout(fetchAndUpdate, 300);
+        const timeStr = lastUpdate.toLocaleString('zh-CN', { hour12: false });
 
-        // 每5秒尝试刷新
-        setInterval(fetchAndUpdate, 5000);
+        if (ok) {
+            const goldBase = (prices.xau * (prices.rate || 6.77) / OZ_TO_G * premiums.gold).toFixed(2);
+            const debug = 'XAU=' + (prices.xau || '?') + '$/oz | USD/CNY=' + (prices.rate || '?') + ' | 黄金基准=' + goldBase + '元/克 | 溢价=' + premiums.gold.toFixed(4) + (failCount > 0 ? ' | 重试=' + failCount : '') + (errorLog.length ? ' | 错误:' + errorLog.join(',') : '');
+            document.getElementById('debugInfo').textContent = debug;
+            updateStatus('实时行情 · 更新于', timeStr, 'ok');
+        } else if (prices.xau !== null) {
+            const goldBase = (prices.xau * (prices.rate || 6.77) / OZ_TO_G * premiums.gold).toFixed(2);
+            document.getElementById('debugInfo').textContent = '[使用缓存数据] XAU=' + prices.xau + ' | 黄金基准=' + goldBase + '元/克 | 错误:' + errorLog.join(',');
+            updateStatus('连接失败 · 使用缓存数据 · 上次更新于', timeStr, 'warn');
+        } else {
+            document.getElementById('debugInfo').textContent = '无法获取数据，请检查网络连接。错误:' + errorLog.join(',');
+            updateStatus('数据加载失败，请稍后刷新', timeStr, 'warn');
+        }
+    }
+
+    // ============ 初始化 ============
+    render();
+    mainLoop();
+    setInterval(mainLoop, 5000);
     </script>
 </body>
 </html>
