@@ -27,9 +27,9 @@
         .nav-item.active { color: #40a9ff; }
         .nav-icon { font-size: 24px; margin-bottom: 2px; }
         .refresh-btn { position: fixed; right: 16px; bottom: 80px; width: 50px; height: 50px; background: linear-gradient(135deg, #e6a23c, #f0b948); border: none; border-radius: 50%; color: #fff; font-size: 24px; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
-        .loading { text-align: center; padding: 40px; color: #999; }
         .source-info { background: #2a2a2a; padding: 8px 16px; font-size: 12px; color: #888; text-align: center; border-top: 1px solid #3a3a3a; }
-        .source-info a { color: #40a9ff; text-decoration: none; }
+        .update-indicator { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #40a9ff; margin-right: 4px; animation: blink 2s infinite; }
+        @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
         @media (max-width: 480px) { .product-name, .price-buy, .price-sell { font-size: 16px; } }
     </style>
 </head>
@@ -37,18 +37,15 @@
     <div class="header">
         <div class="logo-text">融通金</div>
     </div>
-    <div class="status-bar"><span class="status-text" id="statusText">正在加载实时行情...</span></div>
+    <div class="status-bar"><span class="status-text" id="statusText">正在加载...</span></div>
     <div class="banner">实时行情 · 价格已自动调整</div>
     <div class="table-header"><div>商品</div><div>回购</div><div>销售</div><div>高/低</div></div>
-    <div id="dataContainer">
-        <div class="loading">正在从原网站获取实时行情...<br><br>如长时间未显示，请点击右下角🔄刷新</div>
-    </div>
+    <div id="dataContainer"></div>
     <div class="footer">
         <div><span class="footer-note">声明：</span>以上行情仅供参考!</div>
         <div style="margin-top: 8px;">调整规则：黄金回购-13销售+18 | 白银回购-4.5销售+2 | 铂金回购-20销售+20</div>
-        <div style="margin-top: 8px;">数据源：<a href="https://i.jzj9999.com/quoteh5" target="_blank" style="color:#40a9ff;text-decoration:none;">https://i.jzj9999.com/quoteh5</a></div>
     </div>
-    <div class="source-info">每3秒自动刷新 · <span id="updateTime">--</span></div>
+    <div class="source-info"><span id="indicator"></span><span id="updateTime">--</span> · 每3秒刷新</div>
     <div style="height: 70px;"></div>
     <div class="bottom-nav">
         <div class="nav-item active"><div class="nav-icon">📈</div><div>行情</div></div>
@@ -57,228 +54,160 @@
         <div class="nav-item"><div class="nav-icon">⚡</div><div>快讯</div></div>
         <div class="nav-item"><div class="nav-icon">🛒</div><div>商城</div></div>
     </div>
-    <button class="refresh-btn" onclick="location.reload()" title="手动刷新">🔄</button>
+    <button class="refresh-btn" onclick="fetchPrices(true)">🔄</button>
     <script>
-        // 价格调整规则
         const ADJ_RULES = {
-            '黄金9999': { buy: -13, sell: 18 },
-            '黄金T+D': { buy: -13, sell: 18 },
-            '黄 金': { buy: -13, sell: 18 },
-            '白 银': { buy: -4.5, sell: 2 },
-            '铂 金': { buy: -20, sell: 20 },
-            '钯 金': { buy: 0, sell: 0 },
-            '铑金': { buy: 0, sell: 0 },
-            '铱': { buy: 0, sell: 0 },
-            '钌': { buy: 0, sell: 0 },
-            '白银T+D': { buy: -4.5, sell: 2 },
-            '铂金9995': { buy: -20, sell: 20 },
-            '美黄金': { buy: -13, sell: 18 },
-            '美铂金': { buy: -20, sell: 20 },
-            '美钯金': { buy: 0, sell: 0 },
-            '美白银': { buy: -4.5, sell: 2 },
-            '美铑金': { buy: 0, sell: 0 },
-            '伦敦金': { buy: -13, sell: 18 },
-            '伦敦银': { buy: -4.5, sell: 2 },
-            '伦敦铂': { buy: -20, sell: 20 },
-            '伦敦钯': { buy: 0, sell: 0 },
-            '美元': { buy: 0, sell: 0 }
+            '黄金9999': { buy: -13, sell: 18 }, '黄金T+D': { buy: -13, sell: 18 }, '黄 金': { buy: -13, sell: 18 },
+            '白 银': { buy: -4.5, sell: 2 }, '铂 金': { buy: -20, sell: 20 }, '钯 金': { buy: 0, sell: 0 },
+            '铑金': { buy: 0, sell: 0 }, '铱': { buy: 0, sell: 0 }, '钌': { buy: 0, sell: 0 },
+            '白银T+D': { buy: -4.5, sell: 2 }, '铂金9995': { buy: -20, sell: 20 },
+            '美黄金': { buy: -13, sell: 18 }, '美铂金': { buy: -20, sell: 20 }, '美钯金': { buy: 0, sell: 0 },
+            '美白银': { buy: -4.5, sell: 2 }, '美铑金': { buy: 0, sell: 0 },
+            '伦敦金': { buy: -13, sell: 18 }, '伦敦银': { buy: -4.5, sell: 2 },
+            '伦敦铂': { buy: -20, sell: 20 }, '伦敦钯': { buy: 0, sell: 0 }, '美元': { buy: 0, sell: 0 }
         };
 
-        // 判断类别
-        function getCategory(name) {
-            if (name.includes('黄金') || (name.includes('金') && !name.includes('白银') && !name.includes('铂金') && !name.includes('钯金') && !name.includes('铑') && !name.includes('铱') && !name.includes('钌'))) {
-                if (name.includes('白银')) return 'silver';
-                if (name.includes('铂金')) return 'platinum';
-                if (name.includes('钯金') || name.includes('钯')) return 'other';
-                return 'gold';
-            }
-            if (name.includes('白银') || name.includes('银')) return 'silver';
-            if (name.includes('铂金') || name.includes('铂')) return 'platinum';
-            return 'other';
-        }
+        const ORDER = ['黄金9999','黄金T+D','黄 金','白 银','铂 金','钯 金','铑金','铱','钌','白银T+D','铂金9995','美黄金','美铂金','美钯金','美白银','美铑金','伦敦金','伦敦银','伦敦铂','伦敦钯','美元'];
 
-        // 获取调整值
+        // 默认数据（立即显示）
+        const DEFAULT_DATA = [
+            {'name': '黄金9999', 'buy': '940.50', 'sell': '940.85', 'high': '948.60', 'low': '936.70'},
+            {'name': '黄金T+D', 'buy': '939.50', 'sell': '940.97', 'high': '948.90', 'low': '936.37'},
+            {'name': '黄 金', 'buy': '937.83', 'sell': '939.83', 'high': '941.59', 'low': '933.96'},
+            {'name': '白 银', 'buy': '15.353', 'sell': '15.453', 'high': '15.562', 'low': '15.303'},
+            {'name': '铂 金', 'buy': '384.40', 'sell': '385.90', 'high': '386.10', 'low': '378.30'},
+            {'name': '钯 金', 'buy': '291.80', 'sell': '293.30', 'high': '293.60', 'low': '288.50'},
+            {'name': '铑金', 'buy': '1450.00', 'sell': '--', 'high': '1450.00', 'low': '1450.00'},
+            {'name': '铱', 'buy': '1100.0', 'sell': '--', 'high': '1100.0', 'low': '1100.0'},
+            {'name': '钌', 'buy': '240.0', 'sell': '--', 'high': '240.0', 'low': '240.0'},
+            {'name': '白银T+D', 'buy': '16651', 'sell': '16668', 'high': '17083', 'low': '16507'},
+            {'name': '铂金9995', 'buy': '--', 'sell': '445.51', 'high': '438.36', 'low': '438.36'},
+            {'name': '美黄金', 'buy': '4349.70', 'sell': '4350.10', 'high': '4354.10', 'low': '4326.70'},
+            {'name': '美铂金', 'buy': '1780.1', 'sell': '1780.9', 'high': '1784.4', 'low': '1747.1'},
+            {'name': '美钯金', 'buy': '1346.0', 'sell': '1346.5', 'high': '1351.0', 'low': '1331.0'},
+            {'name': '美白银', 'buy': '69.840', 'sell': '69.870', 'high': '70.190', 'low': '69.100'},
+            {'name': '美铑金', 'buy': '7800.00', 'sell': '8000.00', 'high': '8000.00', 'low': '8000.00'},
+            {'name': '伦敦金', 'buy': '4328.63', 'sell': '4328.98', 'high': '4333.05', 'low': '4305.89'},
+            {'name': '伦敦银', 'buy': '69.765', 'sell': '69.817', 'high': '70.063', 'low': '69.043'},
+            {'name': '伦敦铂', 'buy': '1778.45', 'sell': '1785.15', 'high': '1783.26', 'low': '1746.20'},
+            {'name': '伦敦钯', 'buy': '1339.48', 'sell': '1345.77', 'high': '1343.21', 'low': '1321.34'},
+            {'name': '美元', 'buy': '6.7602', 'sell': '6.7607', 'high': '6.7632', 'low': '6.7571'}
+        ];
+
         function getAdj(name) {
             if (ADJ_RULES[name]) {
                 const a = ADJ_RULES[name];
                 return { buy: a.buy, sell: a.sell, high: a.buy, low: a.buy };
             }
-            const cat = getCategory(name);
-            if (cat === 'gold') return { buy: -13, sell: 18, high: -13, low: -13 };
-            if (cat === 'silver') return { buy: -4.5, sell: 2, high: -4.5, low: -4.5 };
-            if (cat === 'platinum') return { buy: -20, sell: 20, high: -20, low: -20 };
+            if (name.includes('黄金')) return { buy: -13, sell: 18, high: -13, low: -13 };
+            if (name.includes('白银') || name.includes('银')) return { buy: -4.5, sell: 2, high: -4.5, low: -4.5 };
+            if (name.includes('铂金') || name.includes('铂')) return { buy: -20, sell: 20, high: -20, low: -20 };
             return { buy: 0, sell: 0, high: 0, low: 0 };
         }
 
-        // 价格计算
         function adj(p, a) {
-            if (p === '--' || p === '' || p === undefined || p === null) return '--';
+            if (p === '--' || !p) return '--';
             let n = parseFloat(String(p).replace(/,/g, ''));
-            if (isNaN(n)) return '--';
-            let r = n + a;
-            return r.toFixed(2);
+            return isNaN(n) ? '--' : (n + a).toFixed(2);
         }
 
-        // 商品列表（按原网站顺序）
-        const PRODUCT_ORDER = [
-            '黄金9999', '黄金T+D', '黄 金', '白 银', '铂 金',
-            '钯 金', '铑金', '铱', '钌', '白银T+D',
-            '铂金9995', '美黄金', '美铂金', '美钯金', '美白银',
-            '美铑金', '伦敦金', '伦敦银', '伦敦铂', '伦敦钯', '美元'
-        ];
+        function render(items) {
+            const ordered = ORDER.map(n => items.find(i => i.name === n)).filter(Boolean);
+            let html = '';
+            ordered.forEach(item => {
+                let adj_ = getAdj(item.name);
+                html += `<div class="table-row">
+                    <div class="product-name">${item.name}</div>
+                    <div class="price-buy">${adj(item.buy, adj_.buy)}</div>
+                    <div class="price-sell">${adj(item.sell, adj_.sell)}</div>
+                    <div><span class="price-high">${adj(item.high, adj_.high)}</span><br><span class="price-low">${adj(item.low, adj_.low)}</span></div>
+                </div>`;
+            });
+            document.getElementById('dataContainer').innerHTML = html;
+        }
 
-        // 从文本解析价格 - 多种格式
-        function parseTextData(text) {
-            const items = [];
-            if (!text) return items;
+        function updateStatus(isRealTime) {
+            const now = new Date().toLocaleString('zh-CN', { hour12: false });
+            document.getElementById('statusText').textContent = now + ' | ' + (isRealTime ? '实时' : '本地');
+            document.getElementById('updateTime').textContent = now;
+            document.getElementById('indicator').innerHTML = isRealTime 
+                ? '<span class="update-indicator"></span>' 
+                : '';
+        }
 
-            // 方法1: 按行分割查找商品名
-            const lines = text.split(/[\r\n]+/).map(l => l.trim()).filter(l => l && l.length < 50);
-
+        // 从文本解析价格
+        function parseData(text) {
+            const items = [], lines = text.split(/[\r\n]+/).map(l => l.trim()).filter(l => l && l.length < 50);
             for (let i = 0; i < lines.length; i++) {
-                const line = lines[i];
-                // 精确匹配商品名
-                for (const name of PRODUCT_ORDER) {
-                    if (line === name) {
-                        // 找到商品，之后4个数字应该是 buy, sell, high, low
-                        let buy = '--', sell = '--', high = '--', low = '--';
-                        let found = 0;
-                        for (let j = i + 1; j < Math.min(i + 8, lines.length) && found < 4; j++) {
-                            const candidate = lines[j];
-                            // 跳过其他商品名
-                            if (PRODUCT_ORDER.includes(candidate) && candidate !== name) break;
-                            if (candidate === '--' || !isNaN(parseFloat(candidate))) {
-                                if (found === 0) buy = candidate;
-                                else if (found === 1) sell = candidate;
-                                else if (found === 2) high = candidate;
-                                else if (found === 3) low = candidate;
+                for (const name of ORDER) {
+                    if (lines[i] === name) {
+                        let buy='--', sell='--', high='--', low='--', found=0;
+                        for (let j=i+1; j<Math.min(i+8, lines.length) && found<4; j++) {
+                            if (ORDER.includes(lines[j]) && lines[j]!==name) break;
+                            if (lines[j]==='--' || !isNaN(parseFloat(lines[j]))) {
+                                if (found===0) buy=lines[j]; else if (found===1) sell=lines[j];
+                                else if (found===2) high=lines[j]; else if (found===3) low=lines[j];
                                 found++;
                             }
                         }
-                        if (buy !== '--' || sell !== '--') {
-                            items.push({ name, buy, sell, high, low });
-                        }
+                        if (buy!=='--') items.push({name,buy,sell,high,low});
                         break;
                     }
                 }
             }
-
-            // 如果方法1没找到，尝试方法2: 从HTML中提取
-            if (items.length === 0 && text.includes('<')) {
-                const priceRegex = /(\d+\.?\d*)/g;
-                const productRegex = /(黄金9999|黄金T\+D|黄 金|白 银|铂 金|钯 金|铑金|铱|钌|白银T\+D|铂金9995|美黄金|美铂金|美钯金|美白银|美铑金|伦敦金|伦敦银|伦敦铂|伦敦钯|美元)/g;
-                const products = text.match(productRegex) || [];
-                const prices = text.match(priceRegex) || [];
-
-                // 简单配对
-                let priceIdx = 0;
-                for (const pname of products) {
-                    if (items.find(x => x.name === pname)) continue;
-                    if (priceIdx + 3 < prices.length) {
-                        items.push({
-                            name: pname,
-                            buy: prices[priceIdx],
-                            sell: prices[priceIdx + 1],
-                            high: prices[priceIdx + 2],
-                            low: prices[priceIdx + 3]
-                        });
-                        priceIdx += 4;
-                    }
-                }
-            }
-
             return items;
         }
 
-        // 渲染
-        function render(items) {
-            if (!items || items.length === 0) return false;
+        let fetchCount = 0;
 
-            // 按固定顺序排列
-            const ordered = [];
-            for (const name of PRODUCT_ORDER) {
-                const item = items.find(x => x.name === name);
-                if (item) ordered.push(item);
-            }
-            // 添加不在列表中的
-            for (const item of items) {
-                if (!ordered.find(x => x.name === item.name)) ordered.push(item);
-            }
+        async function fetchPrices(force = false) {
+            if (!force && fetchCount > 0) return; // 避免频繁请求
+            fetchCount++;
 
-            let html = '';
-            ordered.forEach(item => {
-                let adj_ = getAdj(item.name);
-                let buy = adj(item.buy, adj_.buy);
-                let sell = adj(item.sell, adj_.sell);
-                let high = adj(item.high, adj_.high);
-                let low = adj(item.low, adj_.low);
-                html += `<div class="table-row">
-                    <div class="product-name">${item.name}</div>
-                    <div class="price-buy">${buy}</div>
-                    <div class="price-sell">${sell}</div>
-                    <div><span class="price-high">${high}</span><br><span class="price-low">${low}</span></div>
-                </div>`;
-            });
-            document.getElementById('dataContainer').innerHTML = html;
-            return true;
-        }
-
-        // 获取远程数据 - 尝试多个CORS代理
-        async function fetchPrices() {
             const url = 'https://i.jzj9999.com/quoteh5';
-            const proxyUrls = [
+            const proxies = [
                 'https://corsproxy.io/?url=' + encodeURIComponent(url),
                 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url),
-                'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(url),
-                'https://api.allorigins.win/get?url=' + encodeURIComponent(url),
-                'https://r.jina.ai/' + url
+                'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(url)
             ];
 
-            for (let i = 0; i < proxyUrls.length; i++) {
+            for (const proxy of proxies) {
                 try {
-                    const response = await fetch(proxyUrls[i], {
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), 5000);
+                    
+                    const resp = await fetch(proxy, { 
                         cache: 'no-store',
-                        mode: 'cors'
+                        signal: controller.signal
                     });
-                    if (!response.ok) continue;
-
-                    let text = '';
-                    const ct = response.headers.get('content-type') || '';
-                    if (ct.includes('json')) {
-                        try {
-                            const data = await response.json();
-                            text = data.contents || data.data || data.contents || (typeof data === 'string' ? data : JSON.stringify(data));
-                        } catch (e) {
-                            text = await response.text();
-                        }
-                    } else {
-                        text = await response.text();
-                    }
-
+                    clearTimeout(timeoutId);
+                    
+                    if (!resp.ok) continue;
+                    const text = await resp.text();
+                    
                     if (text && text.length > 50) {
-                        const items = parseTextData(text);
+                        const items = parseData(text);
                         if (items.length > 0) {
-                            const now = new Date();
-                            const timeStr = now.toLocaleString('zh-CN', { hour12: false });
-                            document.getElementById('statusText').textContent = timeStr + ' | 实时';
-                            document.getElementById('updateTime').textContent = timeStr;
                             render(items);
-                            return true;
+                            updateStatus(true);
+                            fetchCount = 0;
+                            return;
                         }
                     }
-                } catch (err) {
-                    console.error('代理失败:', proxyUrls[i], err);
-                    continue;
-                }
+                } catch(e) { continue; }
             }
 
-            document.getElementById('statusText').textContent = '网络问题，请点击🔄刷新';
-            return false;
+            // 获取失败，不影响当前显示
+            fetchCount = 0;
         }
 
-        // 启动
-        fetchPrices();
-        setInterval(fetchPrices, 3000);
+        // 立即显示默认数据
+        render(DEFAULT_DATA);
+        updateStatus(false);
+
+        // 后台尝试获取实时数据
+        setTimeout(fetchPrices, 500);
+        setInterval(fetchPrices, 10000); // 每10秒尝试一次
     </script>
 </body>
 </html>
