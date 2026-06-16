@@ -9,8 +9,9 @@
         body { font-family: -apple-system, BlinkMacSystemFont, "Microsoft YaHei", sans-serif; background: #1a1a1a; color: #fff; min-height: 100vh; }
         .header { background: #2a2a2a; padding: 16px; display: flex; align-items: center; justify-content: space-between; }
         .logo-text { font-size: 20px; font-weight: bold; }
-        .status-bar { background: #2a2a2a; padding: 8px 16px; display: flex; justify-content: flex-end; }
+        .status-bar { background: #2a2a2a; padding: 8px 16px; display: flex; justify-content: space-between; align-items: center; }
         .status-text { color: #ff3333; font-size: 14px; }
+        .source-link { color: #40a9ff; font-size: 12px; text-decoration: none; }
         .banner { background: linear-gradient(135deg, #1890ff, #40a9ff); padding: 12px 16px; text-align: center; color: #fff; font-weight: bold; font-size: 14px; }
         .table-header { display: grid; grid-template-columns: 1.5fr 1fr 1fr 1fr; background: #000; padding: 12px 16px; font-weight: bold; text-align: center; font-size: 16px; }
         .table-row { display: grid; grid-template-columns: 1.5fr 1fr 1fr 1fr; padding: 14px 16px; text-align: center; border-bottom: 1px solid #3a3a3a; }
@@ -29,6 +30,7 @@
         .refresh-btn { position: fixed; right: 16px; bottom: 80px; width: 50px; height: 50px; background: linear-gradient(135deg, #e6a23c, #f0b948); border: none; border-radius: 50%; color: #fff; font-size: 24px; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
         .source-info { background: #2a2a2a; padding: 8px 16px; font-size: 12px; color: #888; text-align: center; border-top: 1px solid #3a3a3a; }
         .update-indicator { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #40a9ff; margin-right: 4px; animation: blink 2s infinite; }
+        .realtime-badge { background: #00cc66; color: #fff; padding: 2px 8px; border-radius: 4px; font-size: 10px; margin-left: 8px; }
         @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
         @media (max-width: 480px) { .product-name, .price-buy, .price-sell { font-size: 16px; } }
     </style>
@@ -37,7 +39,10 @@
     <div class="header">
         <div class="logo-text">融通金</div>
     </div>
-    <div class="status-bar"><span class="status-text" id="statusText">正在加载...</span></div>
+    <div class="status-bar">
+        <span class="source-link" href="https://i.jzj9999.com/quoteh5" onclick="event.preventDefault();window.open('https://i.jzj9999.com/quoteh5')">数据源</span>
+        <span class="status-text" id="statusText">正在加载...</span>
+    </div>
     <div class="banner">实时行情 · 价格已自动调整</div>
     <div class="table-header"><div>商品</div><div>回购</div><div>销售</div><div>高/低</div></div>
     <div id="dataContainer"></div>
@@ -45,7 +50,7 @@
         <div><span class="footer-note">声明：</span>以上行情仅供参考!</div>
         <div style="margin-top: 8px;">调整规则：黄金回购-13销售+18 | 白银回购-4.5销售+2 | 铂金回购-20销售+20</div>
     </div>
-    <div class="source-info"><span id="indicator"></span><span id="updateTime">--</span> · 每3秒刷新</div>
+    <div class="source-info"><span id="indicator"></span><span id="updateTime">--</span><span id="realtimeBadge" class="realtime-badge" style="display:none">实时</span> · <a href="https://i.jzj9999.com/quoteh5" target="_blank" style="color:#40a9ff">原网站</a></div>
     <div style="height: 70px;"></div>
     <div class="bottom-nav">
         <div class="nav-item active"><div class="nav-icon">📈</div><div>行情</div></div>
@@ -69,11 +74,11 @@
 
         const ORDER = ['黄金9999','黄金T+D','黄 金','白 银','铂 金','钯 金','铑金','铱','钌','白银T+D','铂金9995','美黄金','美铂金','美钯金','美白银','美铑金','伦敦金','伦敦银','伦敦铂','伦敦钯','美元'];
 
-        // 默认数据（立即显示）
+        // 默认数据
         const DEFAULT_DATA = [
             {'name': '黄金9999', 'buy': '940.50', 'sell': '940.80', 'high': '948.60', 'low': '936.70'},
             {'name': '黄金T+D', 'buy': '939.70', 'sell': '940.50', 'high': '948.90', 'low': '936.37'},
-            {'name': '黄 金', 'buy': '938.10', 'sell': '940.10', 'high': '941.59', 'low': '933.96'},
+            {'name': '黄 金', 'buy': '941.50', 'sell': '943.50', 'high': '941.59', 'low': '933.96'},
             {'name': '白 银', 'buy': '15.352', 'sell': '15.452', 'high': '15.562', 'low': '15.303'},
             {'name': '铂 金', 'buy': '383.80', 'sell': '385.30', 'high': '385.80', 'low': '378.30'},
             {'name': '钯 金', 'buy': '291.80', 'sell': '293.30', 'high': '293.50', 'low': '288.50'},
@@ -126,16 +131,15 @@
             document.getElementById('dataContainer').innerHTML = html;
         }
 
-        function updateStatus(isRealTime) {
-            const now = new Date().toLocaleString('zh-CN', { hour12: false });
-            document.getElementById('statusText').textContent = now + ' | ' + (isRealTime ? '实时' : '本地');
-            document.getElementById('updateTime').textContent = now;
+        function updateStatus(isRealTime, time) {
+            document.getElementById('statusText').textContent = time;
+            document.getElementById('updateTime').textContent = time;
             document.getElementById('indicator').innerHTML = isRealTime 
                 ? '<span class="update-indicator"></span>' 
                 : '';
+            document.getElementById('realtimeBadge').style.display = isRealTime ? 'inline' : 'none';
         }
 
-        // 从文本解析价格
         function parseData(text) {
             const items = [], lines = text.split(/[\r\n]+/).map(l => l.trim()).filter(l => l && l.length < 50);
             for (let i = 0; i < lines.length; i++) {
@@ -158,23 +162,29 @@
             return items;
         }
 
-        let fetchCount = 0;
+        let currentData = DEFAULT_DATA;
+        let lastFetch = 0;
 
         async function fetchPrices(force = false) {
-            if (!force && fetchCount > 0) return; // 避免频繁请求
-            fetchCount++;
+            const now = Date.now();
+            if (!force && now - lastFetch < 3000) return; // 至少3秒间隔
+            lastFetch = now;
 
             const url = 'https://i.jzj9999.com/quoteh5';
+            
+            // 使用多个代理
             const proxies = [
                 'https://corsproxy.io/?url=' + encodeURIComponent(url),
                 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url),
-                'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(url)
+                'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(url),
+                'https://yacdn.org/proxy/' + url,
+                'https://proxy.cors.sh/' + url
             ];
 
             for (const proxy of proxies) {
                 try {
                     const controller = new AbortController();
-                    const timeoutId = setTimeout(() => controller.abort(), 5000);
+                    const timeoutId = setTimeout(() => controller.abort(), 8000);
                     
                     const resp = await fetch(proxy, { 
                         cache: 'no-store',
@@ -185,29 +195,40 @@
                     if (!resp.ok) continue;
                     const text = await resp.text();
                     
-                    if (text && text.length > 50) {
+                    if (text && text.length > 100) {
+                        // 尝试提取时间
+                        const timeMatch = text.match(/(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2})/);
+                        const timeStr = timeMatch ? timeMatch[1] : new Date().toLocaleString('zh-CN', {hour12: false});
+                        
                         const items = parseData(text);
                         if (items.length > 0) {
+                            currentData = items;
                             render(items);
-                            updateStatus(true);
-                            fetchCount = 0;
-                            return;
+                            updateStatus(true, timeStr);
+                            return true;
                         }
                     }
-                } catch(e) { continue; }
+                } catch(e) { 
+                    console.log('代理失败:', proxy, e.message);
+                    continue; 
+                }
             }
 
-            // 获取失败，不影响当前显示
-            fetchCount = 0;
+            // 获取失败，保留当前数据
+            return false;
         }
 
         // 立即显示默认数据
         render(DEFAULT_DATA);
-        updateStatus(false);
+        updateStatus(false, new Date().toLocaleString('zh-CN', {hour12: false}));
 
-        // 后台尝试获取实时数据
-        setTimeout(fetchPrices, 500);
-        setInterval(fetchPrices, 10000); // 每10秒尝试一次
+        // 立即尝试获取实时数据
+        (async () => {
+            await fetchPrices(true);
+        })();
+
+        // 每3秒尝试获取实时数据
+        setInterval(() => fetchPrices(true), 3000);
     </script>
 </body>
 </html>
