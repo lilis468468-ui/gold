@@ -173,44 +173,40 @@
             return items;
         }
 
-        // ========== 动态溢价：融通金 vs 国际价格 ==========
-        // 1 盎司 = 31.1034768 克
-        const OZ_TO_G = 31.1034768;
+        // ========== 数据基准：融通金价格 + 国际价格快照 ==========
+        // 核心原则：页面显示的价格始终基于融通金数据
+        //   当融通金成功时：直接显示融通金，并记录"当时国际价格"作为基准
+        //   当融通金失败时：用"当前国际价 / 历史国际基准价"的比例 × 历史融通金价格
+        //   这样保证基准数值是融通金，国际价只负责涨跌调整
 
-        // 溢价系数版本号 - 修改系数时提高版本号，强制覆盖旧值
-        const PREMIUM_VERSION = 2;
+        const RONG_VERSION = 3;
 
-        // 默认溢价系数（根据融通金940.50 vs 国际换算1008.68校准）
-        // 黄金溢价 = 940.50 / 1008.68 = 0.9324
-        function defaultPremiums() {
-            return {
-                version: PREMIUM_VERSION,
-                gold: 0.932,
-                silver: 1.036,
-                platinum: 0.863,
-                palladium: 0.820,
-                time: 0
-            };
-        }
-
-        // 从localStorage读取保存的溢价系数
-        function loadPremiums() {
+        // 从localStorage读取"融通金最后一次成功数据 + 对应国际价基准"
+        function loadRongSnapshot() {
             try {
-                const s = localStorage.getItem('goldPremiums');
+                const s = localStorage.getItem('rongSnapshot');
                 if (s) {
                     const p = JSON.parse(s);
-                    // 版本检查：旧版本用新默认值覆盖
-                    if (p.version && p.version >= PREMIUM_VERSION) return p;
+                    if (p.version && p.version >= RONG_VERSION) return p;
                 }
             } catch (e) {}
-            return defaultPremiums();
+            return null; // 没有历史数据就完全依赖融通金
         }
 
-        // 保存溢价系数到localStorage
-        function savePremiums(p) {
+        // 保存融通金数据 + 对应国际价基准
+        function saveRongSnapshot(rongItems, xau, xag, xpt, xpd, rate) {
             try {
-                p.version = PREMIUM_VERSION;
-                localStorage.setItem('goldPremiums', JSON.stringify(p));
+                const snap = {
+                    version: RONG_VERSION,
+                    time: Date.now(),
+                    items: rongItems,
+                    rate: rate
+                };
+                if (xau) snap.xau = xau;
+                if (xag) snap.xag = xag;
+                if (xpt) snap.xpt = xpt;
+                if (xpd) snap.xpd = xpd;
+                localStorage.setItem('rongSnapshot', JSON.stringify(snap));
             } catch (e) {}
         }
 
@@ -231,7 +227,7 @@
                     if (data && data.CNY) return data.CNY;
                 } catch (e) { continue; }
             }
-            return 7.25;
+            return null;
         }
 
         async function fetchSwissquotePrice(symbol) {
@@ -272,203 +268,134 @@
             return null;
         }
 
-        // 用融通金数据 + 国际价格 + 汇率，动态计算溢价系数并保存
-        // 溢价 = 融通金价格(元/克) / (国际价格(美元/盎司) * 汇率 / 31.1035)
-        function calcAndSavePremiums(rongItems, rate, xau, xag, xpt, xpd) {
-            try {
-                const premiums = loadPremiums();
-                const now = Date.now();
-
-                // 黄金9999 用来计算黄金溢价
-                const g9999 = rongItems.find(i => i.name === '黄金9999');
-                if (g9999 && g9999.buy && xau && rate) {
-                    const rongBuy = parseFloat(String(g9999.buy).replace(/,/g, ''));
-                    const intlBuy = xau.bid * rate / OZ_TO_G;
-                    if (rongBuy > 0 && intlBuy > 0) {
-                        premiums.gold = rongBuy / intlBuy;
-                    }
-                }
-
-                // 白 银 计算白银溢价
-                const silver = rongItems.find(i => i.name === '白 银');
-                if (silver && silver.buy && xag && rate) {
-                    const rongBuy = parseFloat(String(silver.buy).replace(/,/g, ''));
-                    const intlBuy = xag.bid * rate / OZ_TO_G;
-                    if (rongBuy > 0 && intlBuy > 0) {
-                        premiums.silver = rongBuy / intlBuy;
-                    }
-                }
-
-                // 铂 金 计算铂金溢价
-                const platinum = rongItems.find(i => i.name === '铂 金');
-                if (platinum && platinum.buy && xpt && rate) {
-                    const rongBuy = parseFloat(String(platinum.buy).replace(/,/g, ''));
-                    const intlBuy = xpt.bid * rate / OZ_TO_G;
-                    if (rongBuy > 0 && intlBuy > 0) {
-                        premiums.platinum = rongBuy / intlBuy;
-                    }
-                }
-
-                // 钯 金
-                const palladium = rongItems.find(i => i.name === '钯 金');
-                if (palladium && palladium.buy && xpd && rate) {
-                    const rongBuy = parseFloat(String(palladium.buy).replace(/,/g, ''));
-                    const intlBuy = xpd.bid * rate / OZ_TO_G;
-                    if (rongBuy > 0 && intlBuy > 0) {
-                        premiums.palladium = rongBuy / intlBuy;
-                    }
-                }
-
-                premiums.time = now;
-                premiums.rate = rate;
-
-                // 限制在合理范围，防止异常数据污染
-                if (premiums.gold > 2.5) premiums.gold = 2.5;
-                if (premiums.gold < 0.5) premiums.gold = 0.5;
-                if (premiums.silver > 3) premiums.silver = 3;
-                if (premiums.silver < 0.5) premiums.silver = 0.5;
-                if (premiums.platinum > 2.5) premiums.platinum = 2.5;
-                if (premiums.platinum < 0.5) premiums.platinum = 0.5;
-
-                savePremiums(premiums);
-                return premiums;
-            } catch (e) { return loadPremiums(); }
+        // 辅助：安全解析价格为数字
+        function pnum(v) {
+            if (!v || v === '--') return null;
+            const n = parseFloat(String(v).replace(/,/g, ''));
+            return isNaN(n) ? null : n;
         }
 
-        // 用保存的动态溢价 + 国际价格换算
-        function calcFromInternational(rate, xau, xag, xpt, xpd, premiums) {
-            const time = new Date().toLocaleString('zh-CN', { hour12: false });
-            const result = currentData.map(i => ({ ...i }));
+        // 辅助：格式化输出，保留原商品的小数位数
+        function fmt(v, decimals) {
+            const n = pnum(v);
+            if (n === null) return '--';
+            return n.toFixed(decimals);
+        }
 
-            const goldP = premiums.gold;
-            const silverP = premiums.silver;
-            const platinumP = premiums.platinum;
-            const palladiumP = premiums.palladium;
+        // 计算一个商品的原始小数位数（从融通金数据里记忆）
+        function getDecimals(item) {
+            // 看buy字段有多少位小数
+            const b = String(item.buy || '').replace(/,/g, '');
+            const dot = b.indexOf('.');
+            if (dot >= 0) return Math.min(b.length - dot - 1, 3);
+            // 没有小数点：白银T+D这种整数
+            if (b.match(/^\d+$/)) return 0;
+            return 2;
+        }
 
-            // 美元/盎司 → 元/克
-            const toGram = (usdPerOz, p) => usdPerOz * rate / OZ_TO_G * p;
-            // 美元/盎司 → 元/盎司
-            const toOzCNY = (usdPerOz) => usdPerOz * rate;
+        // ===== 融通金失败时：用国际金价涨跌比例微调历史融通金价格 =====
+        // 公式：当前价格 = 历史融通金价 × (当前国际价 / 历史国际价)
+        // 这样保证基准数值是融通金，国际价只负责涨跌方向和幅度
+        function calcWithRatioChange(snap, xau, xag, xpt, xpd, rate) {
+            if (!snap || !snap.items) return null;
+            const result = [];
 
-            // ====== 黄金 ======
-            if (xau) {
-                const g9999Buy = toGram(xau.bid, goldP).toFixed(2);
-                const g9999Sell = toGram(xau.ask, goldP).toFixed(2);
+            // 计算各金属的涨跌比例
+            let ratioGold = 1.0, ratioSilver = 1.0, ratioPlat = 1.0, ratioPd = 1.0;
 
-                const i1 = result.findIndex(i => i.name === '黄金9999');
-                if (i1 >= 0) { result[i1].buy = g9999Buy; result[i1].sell = g9999Sell; }
-
-                // 黄金T+D：根据融通金数据特征，通常比黄金9999低约0.8-1元
-                const i2 = result.findIndex(i => i.name === '黄金T+D');
-                if (i2 >= 0) {
-                    result[i2].buy = (parseFloat(g9999Buy) - 0.8).toFixed(2);
-                    result[i2].sell = (parseFloat(g9999Sell) - 0.5).toFixed(2);
-                }
-
-                // 黄 金：通常比黄金9999高约1-2元
-                const i3 = result.findIndex(i => i.name === '黄 金');
-                if (i3 >= 0) {
-                    result[i3].buy = (parseFloat(g9999Buy) + 1.0).toFixed(2);
-                    result[i3].sell = (parseFloat(g9999Sell) + 2.5).toFixed(2);
-                }
-
-                // 美黄金（元/盎司）
-                const i4 = result.findIndex(i => i.name === '美黄金');
-                if (i4 >= 0) {
-                    result[i4].buy = toOzCNY(xau.bid).toFixed(2);
-                    result[i4].sell = toOzCNY(xau.ask).toFixed(2);
-                }
-
-                // 伦敦金
-                const i5 = result.findIndex(i => i.name === '伦敦金');
-                if (i5 >= 0) {
-                    result[i5].buy = toOzCNY(xau.bid * 0.995).toFixed(2);
-                    result[i5].sell = toOzCNY(xau.ask * 0.995).toFixed(2);
-                }
+            if (xau && snap.xau && snap.xau.bid > 0) {
+                ratioGold = xau.bid / snap.xau.bid;
+            }
+            if (xag && snap.xag && snap.xag.bid > 0) {
+                ratioSilver = xag.bid / snap.xag.bid;
+            }
+            if (xpt && snap.xpt && snap.xpt.bid > 0) {
+                ratioPlat = xpt.bid / snap.xpt.bid;
+            }
+            if (xpd && snap.xpd && snap.xpd.bid > 0) {
+                ratioPd = xpd.bid / snap.xpd.bid;
             }
 
-            // ====== 白银 ======
-            if (xag) {
-                const silverBuy = toGram(xag.bid, silverP).toFixed(3);
-                const silverSell = toGram(xag.ask, silverP).toFixed(3);
+            // 判断每个商品属于哪个金属类别，应用对应比例
+            for (const item of snap.items) {
+                const name = item.name;
+                let ratio = 1.0;
+                let isIntlItem = false; // 国际类商品（美黄金、伦敦金等）直接从国际价换算
 
-                const i1 = result.findIndex(i => i.name === '白 银');
-                if (i1 >= 0) { result[i1].buy = silverBuy; result[i1].sell = silverSell; }
-
-                // 白银T+D（元/千克）
-                const i2 = result.findIndex(i => i.name === '白银T+D');
-                if (i2 >= 0) {
-                    result[i2].buy = (xag.bid * rate / OZ_TO_G * 1000 * silverP).toFixed(0);
-                    result[i2].sell = (xag.ask * rate / OZ_TO_G * 1000 * silverP).toFixed(0);
+                if (name.includes('黄金') || name.includes('黄 金') || name === '黄金') {
+                    ratio = ratioGold;
+                } else if (name.includes('白银') || name.includes('白 银') || name.includes('银')) {
+                    ratio = ratioSilver;
+                } else if (name.includes('铂金') || name.includes('铂 金') || name.includes('铂')) {
+                    ratio = ratioPlat;
+                } else if (name.includes('钯金') || name.includes('钯 金') || name.includes('钯')) {
+                    ratio = ratioPd;
+                } else if (name.includes('铑') || name.includes('铱') || name.includes('钌')) {
+                    ratio = ratioGold; // 稀有金属跟随黄金
+                } else if (name === '美元') {
+                    // 美元用汇率直接计算
+                    const d = rate || snap.rate || 7.25;
+                    result.push({
+                        name: '美元',
+                        buy: (d * 100 - 1.5).toFixed(2),
+                        sell: (d * 100 + 1.5).toFixed(2),
+                        high: (d * 100 + 3).toFixed(2),
+                        low: (d * 100 - 2).toFixed(2)
+                    });
+                    continue;
+                } else if (name.startsWith('美') || name.startsWith('伦敦')) {
+                    // 国际商品：用国际价×汇率
+                    isIntlItem = true;
+                } else {
+                    ratio = 1.0;
                 }
 
-                // 美白银
-                const i3 = result.findIndex(i => i.name === '美白银');
-                if (i3 >= 0) {
-                    result[i3].buy = toOzCNY(xag.bid).toFixed(3);
-                    result[i3].sell = toOzCNY(xag.ask).toFixed(3);
+                const dec = getDecimals(item);
+
+                // 国际商品直接用国际价格（元/盎司 = 美元/盎司 × 汇率）
+                if (isIntlItem) {
+                    let intlPriceObj = null;
+                    if (name.includes('黄金') || name.includes('金')) intlPriceObj = xau;
+                    else if (name.includes('白银') || name.includes('银')) intlPriceObj = xag;
+                    else if (name.includes('铂金') || name.includes('铂')) intlPriceObj = xpt;
+                    else if (name.includes('钯金') || name.includes('钯')) intlPriceObj = xpd;
+                    else intlPriceObj = xau;
+
+                    const d = rate || snap.rate || 7.25;
+                    if (intlPriceObj) {
+                        let factor = 1.0;
+                        if (name.includes('伦敦')) factor = 0.995;
+                        const buyV = (intlPriceObj.bid * d * factor);
+                        const sellV = (intlPriceObj.ask * d * factor);
+                        const dec2 = name.includes('白银') || name.includes('银') ? 3 : 2;
+                        result.push({
+                            name: name,
+                            buy: buyV.toFixed(dec2),
+                            sell: sellV.toFixed(dec2),
+                            high: (sellV * 1.005).toFixed(dec2),
+                            low: (buyV * 0.995).toFixed(dec2)
+                        });
+                        continue;
+                    }
+                    // 国际价拿不到，用历史数据
                 }
 
-                // 伦敦银
-                const i4 = result.findIndex(i => i.name === '伦敦银');
-                if (i4 >= 0) {
-                    result[i4].buy = toOzCNY(xag.bid * 0.999).toFixed(3);
-                    result[i4].sell = toOzCNY(xag.ask * 0.999).toFixed(3);
-                }
+                // 国内商品：用历史融通金价格 × 涨跌比例
+                const buyN = pnum(item.buy);
+                const sellN = pnum(item.sell);
+                const highN = pnum(item.high);
+                const lowN = pnum(item.low);
+
+                result.push({
+                    name: name,
+                    buy: buyN !== null ? (buyN * ratio).toFixed(dec) : '--',
+                    sell: sellN !== null ? (sellN * ratio).toFixed(dec) : '--',
+                    high: highN !== null ? (highN * ratio).toFixed(dec) : '--',
+                    low: lowN !== null ? (lowN * ratio).toFixed(dec) : '--'
+                });
             }
 
-            // ====== 铂金 ======
-            if (xpt) {
-                const platBuy = toGram(xpt.bid, platinumP).toFixed(2);
-                const platSell = toGram(xpt.ask, platinumP).toFixed(2);
-
-                const i1 = result.findIndex(i => i.name === '铂 金');
-                if (i1 >= 0) { result[i1].buy = platBuy; result[i1].sell = platSell; }
-
-                const i2 = result.findIndex(i => i.name === '美铂金');
-                if (i2 >= 0) {
-                    result[i2].buy = toOzCNY(xpt.bid).toFixed(2);
-                    result[i2].sell = toOzCNY(xpt.ask).toFixed(2);
-                }
-
-                const i3 = result.findIndex(i => i.name === '伦敦铂');
-                if (i3 >= 0) {
-                    result[i3].buy = toOzCNY(xpt.bid).toFixed(2);
-                    result[i3].sell = toOzCNY(xpt.ask).toFixed(2);
-                }
-            }
-
-            // ====== 钯金 ======
-            if (xpd) {
-                const pdBuy = toGram(xpd.bid, palladiumP).toFixed(2);
-                const pdSell = toGram(xpd.ask, palladiumP).toFixed(2);
-
-                const i1 = result.findIndex(i => i.name === '钯 金');
-                if (i1 >= 0) { result[i1].buy = pdBuy; result[i1].sell = pdSell; }
-
-                const i2 = result.findIndex(i => i.name === '美钯金');
-                if (i2 >= 0) {
-                    result[i2].buy = toOzCNY(xpd.bid).toFixed(2);
-                    result[i2].sell = toOzCNY(xpd.ask).toFixed(2);
-                }
-
-                const i3 = result.findIndex(i => i.name === '伦敦钯');
-                if (i3 >= 0) {
-                    result[i3].buy = toOzCNY(xpd.bid).toFixed(2);
-                    result[i3].sell = toOzCNY(xpd.ask).toFixed(2);
-                }
-            }
-
-            // 美元
-            if (rate) {
-                const i = result.findIndex(i => i.name === '美元');
-                if (i >= 0) {
-                    result[i].buy = (rate * 100 - 1.5).toFixed(2);
-                    result[i].sell = (rate * 100 + 1.5).toFixed(2);
-                }
-            }
-
-            return { result, time };
+            return result;
         }
 
         // ========== 主逻辑 ==========
@@ -491,45 +418,53 @@
             const xpt = xpt0 || await fetchGoldAPIPrice('XPT');
             const xpd = xpd0 || await fetchGoldAPIPrice('XPD');
 
-            // 加载溢价系数
-            const premiums = loadPremiums();
+            // 读取历史快照
+            const snap = loadRongSnapshot();
 
-            // ===== 情况1: 融通金成功 =====
+            // ===== 情况1: 融通金成功 → 直接显示融通金真实数据 =====
             if (rongItems) {
-                // 如果也获取到国际价格+汇率，就用融通金价格动态反推溢价系数并保存
-                if ((xau || xag || xpt || xpd) && rate) {
-                    calcAndSavePremiums(rongItems, rate, xau, xag, xpt, xpd);
-                }
+                // 记录"当时的国际价格快照"，供以后融通金失败时用
+                saveRongSnapshot(rongItems, xau, xag, xpt, xpd, rate);
+
                 currentData = rongItems;
                 render();
                 const time = new Date().toLocaleString('zh-CN', { hour12: false });
-                const p = loadPremiums();
-                updateStatus(
-                    '融通金 实时 (金' + p.gold.toFixed(3) +
-                    ' 银' + p.silver.toFixed(3) +
-                    ' 铂' + p.platinum.toFixed(3) + ')',
-                    time, true
-                );
+
+                // 构造状态信息：包含涨跌比例信息
+                let statusLine = '融通金 实时';
+                if (snap && snap.items && xau && snap.xau && snap.xau.bid > 0) {
+                    const change = ((xau.bid / snap.xau.bid - 1) * 100);
+                    if (Math.abs(change) > 0.01) {
+                        statusLine += ' (国际金' + (change >= 0 ? '+' : '') + change.toFixed(3) + '%)';
+                    }
+                }
+                updateStatus(statusLine, time, true);
                 return;
             }
 
-            // ===== 情况2: 融通金失败，用国际价格 + 保存的溢价系数换算 =====
-            if ((xau || xag || xpt || xpd) && rate) {
-                const out = calcFromInternational(rate, xau, xag, xpt, xpd, premiums);
-                currentData = out.result;
-                render();
-                updateStatus(
-                    '国际行情换算 (汇率' + rate.toFixed(4) +
-                    ' 金' + premiums.gold.toFixed(3) +
-                    ' 银' + premiums.silver.toFixed(3) + ')',
-                    out.time, true
-                );
-                return;
+            // ===== 情况2: 融通金失败，但有历史快照 + 国际价 → 用比例微调 =====
+            if (snap && snap.items && (xau || xag || xpt || xpd)) {
+                const items = calcWithRatioChange(snap, xau, xag, xpt, xpd, rate);
+                if (items) {
+                    currentData = items;
+                    render();
+                    const time = new Date().toLocaleString('zh-CN', { hour12: false });
+
+                    // 计算展示的比例信息
+                    let info = '跟随国际';
+                    if (snap.xau && xau) {
+                        const chg = ((xau.bid / snap.xau.bid - 1) * 100);
+                        info += ' (金' + (chg >= 0 ? '+' : '') + chg.toFixed(3) + '%)';
+                    }
+                    const since = new Date(snap.time).toLocaleString('zh-CN', { hour12: false });
+                    updateStatus(info + ' 基准:' + since, time, true);
+                    return;
+                }
             }
 
-            // ===== 情况3: 都失败 =====
+            // ===== 情况3: 都失败，用默认数据 =====
             const time = new Date().toLocaleString('zh-CN', { hour12: false });
-            updateStatus('默认数据', time, false);
+            updateStatus('默认数据（请稍后刷新）', time, false);
         }
 
         // 立即渲染默认数据
