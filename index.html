@@ -6,13 +6,13 @@
     <title>贵金属行情监控</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: #1a1a1a; color: #fff; min-height: 100vh; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Microsoft YaHei", sans-serif; background: #1a1a1a; color: #fff; min-height: 100vh; }
         .header { background: #2a2a2a; padding: 16px; display: flex; align-items: center; justify-content: space-between; }
         .logo-text { font-size: 20px; font-weight: bold; }
         .status-bar { background: #2a2a2a; padding: 8px 16px; display: flex; justify-content: flex-end; }
         .status-text { color: #ff3333; font-size: 14px; }
-        .banner { background: linear-gradient(135deg, #1890ff, #40a9ff); padding: 12px 16px; text-align: center; color: #fff; font-weight: bold; }
-        .table-header { display: grid; grid-template-columns: 1.5fr 1fr 1fr 1fr; background: #000; padding: 12px 16px; font-weight: bold; text-align: center; }
+        .banner { background: linear-gradient(135deg, #1890ff, #40a9ff); padding: 12px 16px; text-align: center; color: #fff; font-weight: bold; font-size: 14px; }
+        .table-header { display: grid; grid-template-columns: 1.5fr 1fr 1fr 1fr; background: #000; padding: 12px 16px; font-weight: bold; text-align: center; font-size: 16px; }
         .table-row { display: grid; grid-template-columns: 1.5fr 1fr 1fr 1fr; padding: 14px 16px; text-align: center; border-bottom: 1px solid #3a3a3a; }
         .table-row:nth-child(even) { background: #1a1a1a; }
         .table-row:nth-child(odd) { background: #252525; }
@@ -27,6 +27,7 @@
         .nav-item.active { color: #40a9ff; }
         .nav-icon { font-size: 24px; margin-bottom: 2px; }
         .refresh-btn { position: fixed; right: 16px; bottom: 80px; width: 50px; height: 50px; background: linear-gradient(135deg, #e6a23c, #f0b948); border: none; border-radius: 50%; color: #fff; font-size: 24px; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
+        .loading { text-align: center; padding: 40px; color: #999; }
         @media (max-width: 480px) { .product-name, .price-buy, .price-sell { font-size: 16px; } }
     </style>
 </head>
@@ -34,12 +35,15 @@
     <div class="header">
         <div class="logo-text">融通金</div>
     </div>
-    <div class="status-bar"><span class="status-text" id="statusText">实时</span></div>
-    <div class="banner">下载融通金APP，了解更多</div>
+    <div class="status-bar"><span class="status-text" id="statusText">正在加载...</span></div>
+    <div class="banner">实时行情 · 价格已自动调整</div>
     <div class="table-header"><div>商品</div><div>回购</div><div>销售</div><div>高/低</div></div>
-    <div id="dataContainer"></div>
+    <div id="dataContainer">
+        <div class="loading">正在获取实时行情...</div>
+    </div>
     <div class="footer">
         <div><span class="footer-note">声明：</span>以上行情仅供参考!</div>
+        <div style="margin-top: 8px;">调整规则：黄金回购-13销售+18 | 白银回购-4.5销售+2 | 铂金回购-20销售+20</div>
     </div>
     <div style="height: 70px;"></div>
     <div class="bottom-nav">
@@ -51,57 +55,113 @@
     </div>
     <button class="refresh-btn" onclick="location.reload()">🔄</button>
     <script>
-        const BASE_DATA = [
-            {'name': '黄金9999', 'buy': '940.50', 'sell': '940.85', 'high': '948.60', 'low': '936.70'},
-            {'name': '黄金T+D', 'buy': '939.50', 'sell': '940.97', 'high': '948.90', 'low': '936.37'},
-            {'name': '黄 金', 'buy': '937.83', 'sell': '939.83', 'high': '941.59', 'low': '933.96'},
-            {'name': '白 银', 'buy': '15.353', 'sell': '15.453', 'high': '15.562', 'low': '15.303'},
-            {'name': '铂 金', 'buy': '384.40', 'sell': '385.90', 'high': '386.10', 'low': '378.30'},
-            {'name': '钯 金', 'buy': '291.80', 'sell': '293.30', 'high': '293.60', 'low': '288.50'},
-            {'name': '铑金', 'buy': '1450.00', 'sell': '--', 'high': '1450.00', 'low': '1450.00'},
-            {'name': '铱', 'buy': '1100.0', 'sell': '--', 'high': '1100.0', 'low': '1100.0'},
-            {'name': '钌', 'buy': '240.0', 'sell': '--', 'high': '240.0', 'low': '240.0'},
-            {'name': '白银T+D', 'buy': '16651', 'sell': '16668', 'high': '17083', 'low': '16507'},
-            {'name': '铂金9995', 'buy': '--', 'sell': '445.51', 'high': '438.36', 'low': '438.36'},
-            {'name': '美黄金', 'buy': '4349.70', 'sell': '4350.10', 'high': '4354.10', 'low': '4326.70'},
-            {'name': '美铂金', 'buy': '1780.1', 'sell': '1780.9', 'high': '1784.4', 'low': '1747.1'},
-            {'name': '美钯金', 'buy': '1346.0', 'sell': '1346.5', 'high': '1351.0', 'low': '1331.0'},
-            {'name': '美白银', 'buy': '69.840', 'sell': '69.870', 'high': '70.190', 'low': '69.100'},
-            {'name': '美铑金', 'buy': '7800.00', 'sell': '8000.00', 'high': '8000.00', 'low': '8000.00'},
-            {'name': '伦敦金', 'buy': '4328.63', 'sell': '4328.98', 'high': '4333.05', 'low': '4305.89'},
-            {'name': '伦敦银', 'buy': '69.765', 'sell': '69.817', 'high': '70.063', 'low': '69.043'},
-            {'name': '伦敦铂', 'buy': '1778.45', 'sell': '1785.15', 'high': '1783.26', 'low': '1746.20'},
-            {'name': '伦敦钯', 'buy': '1339.48', 'sell': '1345.77', 'high': '1343.21', 'low': '1321.34'},
-            {'name': '美元', 'buy': '6.7602', 'sell': '6.7607', 'high': '6.7632', 'low': '6.7571'},
-        ];
-        
-        function rF(v) {
-            if (v === '--') return v;
-            let n = parseFloat(v.replace(/,/g, ''));
-            let f = n > 1000 ? n * 0.0002 : n * 0.001;
-            let c = (Math.random() - 0.5) * 2 * f;
-            let r = n + c;
-            return r.toFixed(2);
+        // 价格调整规则
+        const ADJ_RULES = {
+            '黄金9999': { buy: -13, sell: 18 },
+            '黄金T+D': { buy: -13, sell: 18 },
+            '黄 金': { buy: -13, sell: 18 },
+            '白 银': { buy: -4.5, sell: 2 },
+            '铂 金': { buy: -20, sell: 20 },
+            '钯 金': { buy: 0, sell: 0 },
+            '铑金': { buy: 0, sell: 0 },
+            '铱': { buy: 0, sell: 0 },
+            '钌': { buy: 0, sell: 0 },
+            '白银T+D': { buy: -4.5, sell: 2 },
+            '铂金9995': { buy: -20, sell: 20 },
+            '美黄金': { buy: -13, sell: 18 },
+            '美铂金': { buy: -20, sell: 20 },
+            '美钯金': { buy: 0, sell: 0 },
+            '美白银': { buy: -4.5, sell: 2 },
+            '美铑金': { buy: 0, sell: 0 },
+            '伦敦金': { buy: -13, sell: 18 },
+            '伦敦银': { buy: -4.5, sell: 2 },
+            '伦敦铂': { buy: -20, sell: 20 },
+            '伦敦钯': { buy: 0, sell: 0 },
+            '美元': { buy: 0, sell: 0 }
+        };
+
+        // 判断是黄金/白银/铂金类型
+        function getCategory(name) {
+            if (name.includes('黄金') || name.includes('金')) {
+                if (name.includes('白银')) return 'silver';
+                if (name.includes('铂金')) return 'platinum';
+                if (name.includes('钯金') || name.includes('钯')) return 'other';
+                if (name.includes('铑') || name.includes('铱') || name.includes('钌')) return 'other';
+                return 'gold';
+            }
+            if (name.includes('白银') || name.includes('银')) return 'silver';
+            if (name.includes('铂金') || name.includes('铂')) return 'platinum';
+            return 'other';
         }
-        
+
+        // 获取调整规则
+        function getAdj(name) {
+            // 先精确匹配
+            if (ADJ_RULES[name]) {
+                const adj = ADJ_RULES[name];
+                return { buy: adj.buy, sell: adj.sell, high: adj.buy, low: adj.buy };
+            }
+            // 再按类别匹配
+            const cat = getCategory(name);
+            if (cat === 'gold') return { buy: -13, sell: 18, high: -13, low: -13 };
+            if (cat === 'silver') return { buy: -4.5, sell: 2, high: -4.5, low: -4.5 };
+            if (cat === 'platinum') return { buy: -20, sell: 20, high: -20, low: -20 };
+            return { buy: 0, sell: 0, high: 0, low: 0 };
+        }
+
+        // 价格调整
         function adj(p, a) {
-            if (p === '--' || p === undefined) return '--';
-            let n = parseFloat(p);
+            if (p === '--' || p === '' || p === undefined || p === null) return '--';
+            let n = parseFloat(String(p).replace(/,/g, ''));
+            if (isNaN(n)) return '--';
             let r = n + a;
             return r.toFixed(2);
         }
-        
-        function getAdj(name) {
-            name = name.trim().replace(/\s/g, '');
-            if (name.includes('铂金')) return {buy: -20, sell: 20, high: -20, low: -20};
-            if (name.includes('白银')) return {buy: -4.5, sell: 2, high: -4.5, low: -4.5};
-            if (name.includes('黄金')) return {buy: -13, sell: 18, high: -13, low: -13};
-            return {buy: 0, sell: 0, high: 0, low: 0};
+
+        // 从纯文本解析价格数据
+        function parseTextData(text) {
+            const lines = text.split('\n').map(l => l.trim()).filter(l => l);
+            const items = [];
+            
+            // 商品名称列表（按原网站顺序）
+            const productNames = [
+                '黄金9999', '黄金T+D', '黄 金', '白 银', '铂 金', 
+                '钯 金', '铑金', '铱', '钌', '白银T+D', 
+                '铂金9995', '美黄金', '美铂金', '美钯金', '美白银', 
+                '美铑金', '伦敦金', '伦敦银', '伦敦铂', '伦敦钯', '美元'
+            ];
+            
+            // 从文本中找匹配的商品行
+            // 策略：遍历所有行，尝试匹配商品名和4个价格
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i];
+                // 尝试在当前行或相邻几行找到商品名和价格
+                for (const name of productNames) {
+                    if (line === name) {
+                        // 找到商品名，后面4个应该是 buy, sell, high, low
+                        const buy = lines[i+1] || '--';
+                        const sell = lines[i+2] || '--';
+                        const high = lines[i+3] || '--';
+                        const low = lines[i+4] || '--';
+                        
+                        // 验证是否是数字
+                        const isNum = v => v === '--' || !isNaN(parseFloat(v));
+                        if (isNum(buy) && isNum(sell) && isNum(high) && isNum(low)) {
+                            items.push({ name, buy, sell, high, low });
+                            i += 4; // 跳过已处理的价格行
+                        }
+                        break;
+                    }
+                }
+            }
+            
+            return items;
         }
-        
-        function render() {
+
+        // 渲染数据
+        function render(items) {
             let html = '';
-            BASE_DATA.forEach(item => {
+            items.forEach(item => {
                 let adj_ = getAdj(item.name);
                 let buy = adj(item.buy, adj_.buy);
                 let sell = adj(item.sell, adj_.sell);
@@ -115,11 +175,52 @@
                 </div>`;
             });
             document.getElementById('dataContainer').innerHTML = html;
-            document.getElementById('statusText').textContent = new Date().toLocaleString('zh-CN', {hour12:false}) + ' | 实时';
         }
-        
-        setInterval(render, 1000);
-        render();
+
+        // 获取远程数据（使用CORS代理）
+        async function fetchPrices() {
+            const url = 'https://i.jzj9999.com/quoteh5';
+            const proxyUrls = [
+                'https://api.allorigins.win/get?url=' + encodeURIComponent(url),
+                'https://corsproxy.io/?' + encodeURIComponent(url),
+                'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(url)
+            ];
+
+            for (let i = 0; i < proxyUrls.length; i++) {
+                try {
+                    const response = await fetch(proxyUrls[i], { cache: 'no-store' });
+                    if (!response.ok) continue;
+                    
+                    let text = '';
+                    try {
+                        const data = await response.json();
+                        text = data.contents || data.data || JSON.stringify(data);
+                    } catch (e) {
+                        text = await response.text();
+                    }
+                    
+                    if (text && text.length > 100) {
+                        const items = parseTextData(text);
+                        if (items.length > 0) {
+                            document.getElementById('statusText').textContent = 
+                                new Date().toLocaleString('zh-CN', {hour12: false}) + ' | 实时';
+                            render(items);
+                            return;
+                        }
+                    }
+                } catch (err) {
+                    console.error('代理失败:', proxyUrls[i], err);
+                    continue;
+                }
+            }
+            
+            document.getElementById('statusText').textContent = 
+                new Date().toLocaleString('zh-CN', {hour12: false}) + ' | 获取失败，请刷新';
+        }
+
+        // 启动 - 首次获取后每3秒刷新
+        fetchPrices();
+        setInterval(fetchPrices, 3000);
     </script>
 </body>
 </html>
