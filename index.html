@@ -177,18 +177,41 @@
         // 1 盎司 = 31.1034768 克
         const OZ_TO_G = 31.1034768;
 
+        // 溢价系数版本号 - 修改系数时提高版本号，强制覆盖旧值
+        const PREMIUM_VERSION = 2;
+
+        // 默认溢价系数（根据融通金940.50 vs 国际换算1008.68校准）
+        // 黄金溢价 = 940.50 / 1008.68 = 0.9324
+        function defaultPremiums() {
+            return {
+                version: PREMIUM_VERSION,
+                gold: 0.932,
+                silver: 1.036,
+                platinum: 0.863,
+                palladium: 0.820,
+                time: 0
+            };
+        }
+
         // 从localStorage读取保存的溢价系数
         function loadPremiums() {
             try {
                 const s = localStorage.getItem('goldPremiums');
-                if (s) return JSON.parse(s);
+                if (s) {
+                    const p = JSON.parse(s);
+                    // 版本检查：旧版本用新默认值覆盖
+                    if (p.version && p.version >= PREMIUM_VERSION) return p;
+                }
             } catch (e) {}
-            return { gold: 1.08, silver: 1.2, platinum: 1.0, palladium: 0.95, time: 0 };
+            return defaultPremiums();
         }
 
         // 保存溢价系数到localStorage
         function savePremiums(p) {
-            try { localStorage.setItem('goldPremiums', JSON.stringify(p)); } catch (e) {}
+            try {
+                p.version = PREMIUM_VERSION;
+                localStorage.setItem('goldPremiums', JSON.stringify(p));
+            } catch (e) {}
         }
 
         async function fetchExchangeRate() {
