@@ -157,16 +157,18 @@
         .phl .low { color: #22c55e; }
         .hint {
             color: #888;
-            padding: 18px 20px;
+            padding: 14px 20px 16px;
             text-align: center;
-            font-size: 14px;
+            font-size: 18px;
             background: #2b2b2b;
+            border-top: 1px solid #3a3a3a;
         }
+        .hint span { color: #ff3b3b; font-weight: bold; }
         .debug {
-            color: #666;
-            padding: 12px 20px 24px;
-            font-size: 12px;
-            line-height: 1.8;
+            color: #555;
+            padding: 8px 20px 16px;
+            font-size: 11px;
+            line-height: 1.6;
             background: #1a1a1a;
         }
         /* 底部导航 */
@@ -250,7 +252,7 @@
     </table>
 
     <div class="page-padding"></div>
-    <div class="hint">调整规则: 黄金回购-15 销售+10 | 白银回购-4.5 销售+2 | 铂金回购-25 销售+20</div>
+    <div class="hint" id="priceHint">黄金9999 回购 <span id="hintBuy">--</span> 销售 <span id="hintSell">--</span> | 调整规则: 黄金回购-15 销售+10 | 白银回购-4.5 销售+2 | 铂金回购-25 销售+20</div>
     <div class="debug" id="debugInfo"></div>
 
     <div class="bottom-nav">
@@ -438,8 +440,24 @@
         }
 
         const xauNow = prices.xau || rongtongSnapshot.xau;
+        // 更新提示栏的黄金9999价格
+        const gold9999 = calcPrice(products[0]);
+        if (gold9999.buy != null) {
+            document.getElementById('hintBuy').textContent = gold9999.buy.toFixed(2);
+            document.getElementById('hintSell').textContent = gold9999.sell != null ? gold9999.sell.toFixed(2) : '--';
+        }
+
         const delta = ((xauNow - rongtongSnapshot.xau) * (prices.rate || 6.77) / OZ_TO_G).toFixed(2);
-        const debug = 'XAU=' + xauNow.toFixed(2) + '$/oz | USD/CNY=' + (prices.rate || '?') + ' | 相对融通金基准变动=' + (delta >= 0 ? '+' : '') + delta + '元/克' + (errorLog.length ? ' | 失败:' + errorLog.join(',') : '');
+        // 调试: 输出黄金9999的计算过程
+        const debugGold9999 = () => {
+            const p = products[0]; // 黄金9999
+            const snap = rongtongSnapshot.prices[p.name];
+            const buyAdj = p.buyAdj || 0, sellAdj = p.sellAdj || 0;
+            const d = (prices.xau - rongtongSnapshot.xau) * (prices.rate || 6.77) / OZ_TO_G;
+            const b = snap.buy + d + buyAdj, s = snap.sell + d + sellAdj;
+            return '黄金9999: 基准buy=' + snap.buy + ' delta=' + d.toFixed(4) + ' adj=' + buyAdj + ' => ' + b.toFixed(2) + ' | 基准sell=' + snap.sell + ' adj=' + sellAdj + ' => ' + s.toFixed(2);
+        };
+        const debug = 'XAU=' + xauNow.toFixed(2) + '$/oz | USD/CNY=' + (prices.rate || '?') + ' | ' + debugGold9999() + ' | ' + (errorLog.length ? '失败:' + errorLog.join(',') : '正常');
         document.getElementById('debugInfo').textContent = debug;
     }
 
