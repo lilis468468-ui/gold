@@ -8,138 +8,248 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: "PingFang SC", "Microsoft YaHei", -apple-system, sans-serif;
-            background: #1f1f1f;
+            background: #262626;
             color: #fff;
             min-height: 100vh;
-            font-size: 14px;
+            font-size: 22px;
         }
         /* 顶部 LOGO 栏 */
         .top-bar {
-            background: #1a1a1a;
-            padding: 14px 18px;
+            background: #2b2b2b;
+            padding: 14px 22px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            border-bottom: 1px solid #333;
         }
         .logo {
             display: flex;
-            align-items: center;
-            gap: 10px;
+            align-items: flex-start;
+            gap: 14px;
         }
-        .logo-icon {
-            width: 42px;
-            height: 42px;
-            border: 2px solid #d4a84b;
-            border-radius: 4px;
+        .logo-mark {
+            width: 54px;
+            height: 54px;
+            position: relative;
             display: flex;
             align-items: center;
             justify-content: center;
-            color: #d4a84b;
-            font-size: 22px;
-            font-weight: bold;
         }
-        .logo-name {
-            font-size: 22px;
-            color: #d4a84b;
+        .logo-mark svg {
+            width: 100%;
+            height: 100%;
+        }
+        .logo-texts {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            line-height: 1.15;
+        }
+        .logo-cn {
+            font-size: 30px;
+            color: #fff;
             font-weight: bold;
-            letter-spacing: 2px;
+            letter-spacing: 3px;
         }
         .logo-en {
-            font-size: 11px;
-            color: #d4a84b;
+            font-size: 13px;
+            color: #fff;
             letter-spacing: 1px;
             margin-top: 2px;
         }
+        .logo-sub {
+            font-size: 12px;
+            color: #fff;
+            margin-top: 2px;
+            letter-spacing: 1px;
+        }
+        .qr-wrap {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+        }
         .qr-code {
-            width: 80px;
-            height: 80px;
+            width: 90px;
+            height: 90px;
             background: #fff;
             display: flex;
             align-items: center;
             justify-content: center;
             color: #000;
             font-size: 11px;
+            text-align: center;
+            border: 1px solid #ccc;
+        }
+        .qr-caption {
+            color: #fff;
+            font-size: 13px;
+        }
+        /* 分割线 */
+        .divider {
+            height: 3px;
+            background: #fff;
         }
         /* 状态栏 */
         .status-line {
-            background: #1a1a1a;
-            padding: 10px 18px;
+            background: #2b2b2b;
+            padding: 12px 22px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            font-size: 14px;
+            font-size: 22px;
         }
-        .time-info { color: #ff4d4d; font-weight: 500; }
-        .time-info .ok { color: #00cc66; }
-        /* 表格 */
-        .grid {
-            width: 100%;
+        .status-left {
+            color: #fff;
         }
-        .row {
-            display: grid;
-            grid-template-columns: 2fr 1.5fr 1.5fr 1.5fr;
-            padding: 14px 20px;
+        .time-info { color: #ff3b3b; font-weight: 500; }
+        .time-info.ok { color: #ff3b3b; }
+        /* 促销文字 */
+        .promo {
+            background: #2b2b2b;
+            padding: 10px 22px 20px;
             text-align: center;
-            border-bottom: 1px solid #2a2a2a;
+            color: #fff;
+            font-size: 18px;
         }
-        .row.head {
-            background: #1a1a1a;
-            font-size: 15px;
+        /* 表格 */
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .table th {
+            background: #000;
+            color: #fff;
+            font-size: 26px;
             font-weight: bold;
-            padding: 16px 20px;
+            padding: 18px 10px;
+            text-align: center;
+            border: 2px solid #1a1a1a;
         }
-        .row.head > div { color: #fff; }
-        .pname { color: #d4a84b; font-size: 17px; font-weight: 500; text-align: left; padding-left: 10px; }
-        .pval { font-size: 17px; font-weight: 500; }
-        .up { color: #ff4d4d; }
-        .down { color: #22c55e; }
+        .table td {
+            padding: 18px 10px;
+            text-align: center;
+            font-size: 26px;
+            font-weight: 500;
+            border: 2px solid #1a1a1a;
+        }
+        .row-black { background: #000; }
+        .row-dark { background: #2b2b2b; }
+        .pname { color: #e6a84b; }
+        .pup { color: #ff3b3b; }
+        .pdown { color: #22c55e; }
+        .phl {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            line-height: 1.2;
+        }
+        .phl .high { color: #ff3b3b; }
+        .phl .low { color: #22c55e; }
         .hint {
             color: #888;
-            padding: 16px 20px;
+            padding: 18px 20px;
             text-align: center;
-            font-size: 13px;
-            background: #1a1a1a;
+            font-size: 14px;
+            background: #2b2b2b;
         }
         .debug {
             color: #666;
-            padding: 10px 20px 24px;
-            font-size: 11px;
+            padding: 12px 20px 24px;
+            font-size: 12px;
             line-height: 1.8;
             background: #1a1a1a;
-            border-top: 1px solid #2a2a2a;
         }
-        @media (max-width: 480px) {
-            .pname, .pval { font-size: 15px; }
-            .row { padding: 12px 8px; }
-            .row.head { padding: 14px 8px; }
-            .logo-name { font-size: 18px; }
-            .logo-icon { width: 34px; height: 34px; font-size: 16px; }
-            .qr-code { width: 60px; height: 60px; }
+        /* 底部导航 */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: #3a3a3a;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            height: 70px;
+            border-top: 1px solid #4a4a4a;
+            z-index: 10;
+        }
+        .nav-item {
+            flex: 1;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-size: 14px;
+        }
+        .nav-item.active { color: #3da3ff; }
+        .nav-icon {
+            font-size: 28px;
+            margin-bottom: 4px;
+        }
+        .page-padding { height: 80px; }
+        @media (max-width: 520px) {
+            body { font-size: 18px; }
+            .table th { font-size: 20px; padding: 14px 6px; }
+            .table td { font-size: 20px; padding: 14px 6px; }
+            .logo-cn { font-size: 24px; }
+            .logo-mark { width: 44px; height: 44px; }
+            .qr-code { width: 70px; height: 70px; }
+            .status-line { font-size: 18px; }
+            .promo { font-size: 15px; }
         }
     </style>
 </head>
 <body>
     <div class="top-bar">
         <div class="logo">
-            <div class="logo-icon">金</div>
-            <div>
-                <div class="logo-name">融通金</div>
+            <div class="logo-mark">
+                <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M 0 95 L 20 40 L 35 65 L 50 20 L 65 65 L 80 40 L 100 95 Z" fill="none" stroke="#fff" stroke-width="3"/>
+                    <text x="10" y="90" font-size="14" fill="#fff" font-weight="bold">PMSP</text>
+                </svg>
+            </div>
+            <div class="logo-texts">
+                <div class="logo-cn">融通金</div>
                 <div class="logo-en">RONGTONG GOLD</div>
             </div>
         </div>
-        <div class="qr-code">二维码</div>
+        <div class="qr-wrap">
+            <div class="qr-code">二维码</div>
+            <div class="qr-caption">黄金大盘价 扫码购</div>
+        </div>
     </div>
+    <div class="divider"></div>
     <div class="status-line">
-        <span></span>
-        <span class="time-info" id="timeInfo">加载中...</span>
+        <span class="status-left"></span>
+        <span class="time-info ok" id="timeInfo">加载中...</span>
     </div>
-    <div class="grid">
-        <div class="row head"><div>商品</div><div>回购</div><div>销售</div><div>高/低</div></div>
-        <div id="dataContainer"></div>
-    </div>
+    <div class="promo">大盘价购金条，高纯度、低工费、包邮包保险，买金更省心</div>
+
+    <table class="table">
+        <thead>
+            <tr>
+                <th style="width:25%">商品</th>
+                <th style="width:25%">回购</th>
+                <th style="width:25%">销售</th>
+                <th style="width:25%">高/低</th>
+            </tr>
+        </thead>
+        <tbody id="dataBody"></tbody>
+    </table>
+
+    <div class="page-padding"></div>
     <div class="hint">数据来源: 融通金基准 + 国际金价实时校准</div>
     <div class="debug" id="debugInfo"></div>
+
+    <div class="bottom-nav">
+        <div class="nav-item active"><div class="nav-icon">📊</div><div>行情</div></div>
+        <div class="nav-item"><div class="nav-icon">📋</div><div>基差</div></div>
+        <div class="nav-item"><div class="nav-icon">📰</div><div>资讯</div></div>
+        <div class="nav-item"><div class="nav-icon">⚡</div><div>快讯</div></div>
+        <div class="nav-item"><div class="nav-icon">🛒</div><div>商城</div></div>
+    </div>
 
     <script>
     const OZ_TO_G = 31.1034768;
@@ -157,16 +267,16 @@
             '白 银':  { buy: 15.509, sell: 15.609 },
             '铂 金':  { buy: 384.60, sell: 386.10 },
             '钯 金':  { buy: 291.30, sell: 292.80 },
-            '铑金':   { buy: 1450.00, sell: 1450.00 },
-            '铱':     { buy: 1100.0, sell: 1100.0 },
-            '钌':     { buy: 240.0,  sell: 240.0 },
+            '铑金':   { buy: 1450.00, sell: null },
+            '铱':     { buy: 1100.0, sell: null },
+            '钌':     { buy: 240.0,  sell: null },
             '白银T+D':{ buy: 16759,  sell: 16766 },
             '铂金9995':{ buy: 445.00, sell: 448.20 },
             '美黄金': { buy: 4351.10, sell: 4351.50 },
             '美铂金': { buy: 1808.0, sell: 1808.5 },
             '美钯金': { buy: 1356.0, sell: 1357.0 },
             '美白银': { buy: 70.250, sell: 70.280 },
-            '美铑金': { buy: 7800.00, sell: 7800.00 },
+            '美铑金': { buy: 7800.00, sell: null },
             '伦敦金': { buy: 4339.31, sell: 4339.66 },
             '伦敦银': { buy: 70.130, sell: 70.189 },
             '伦敦铂': { buy: 1809.45, sell: 1815.45 },
@@ -182,16 +292,16 @@
         { name: '白 银', metal: 'silver', decimals: 3 },
         { name: '铂 金', metal: 'platinum', decimals: 2 },
         { name: '钯 金', metal: 'palladium', decimals: 2 },
-        { name: '铑金', metal: 'gold', decimals: 2 },
-        { name: '铱', metal: 'gold', decimals: 1 },
-        { name: '钌', metal: 'gold', decimals: 1 },
+        { name: '铑金', metal: 'gold', decimals: 2, constant: true },
+        { name: '铱', metal: 'gold', decimals: 1, constant: true },
+        { name: '钌', metal: 'gold', decimals: 1, constant: true },
         { name: '白银T+D', metal: 'silver', decimals: 0 },
         { name: '铂金9995', metal: 'platinum', decimals: 2 },
         { name: '美黄金', metal: 'gold', decimals: 2, unit: 'oz' },
         { name: '美铂金', metal: 'platinum', decimals: 1, unit: 'oz' },
         { name: '美钯金', metal: 'palladium', decimals: 1, unit: 'oz' },
         { name: '美白银', metal: 'silver', decimals: 3, unit: 'oz' },
-        { name: '美铑金', metal: 'gold', decimals: 2 },
+        { name: '美铑金', metal: 'gold', decimals: 2, constant: true },
         { name: '伦敦金', metal: 'gold', decimals: 2, unit: 'oz' },
         { name: '伦敦银', metal: 'silver', decimals: 3, unit: 'oz' },
         { name: '伦敦铂', metal: 'platinum', decimals: 2, unit: 'oz' },
@@ -208,7 +318,6 @@
         const snap = rongtongSnapshot.prices[product.name];
         if (!snap) return { buy: null, sell: null };
 
-        // 国际商品: oz 单位, 直接用当前 XAU/XAG/XPT/XPD
         if (product.unit === 'oz') {
             let m;
             if (product.metal === 'gold') m = prices.xau;
@@ -219,18 +328,15 @@
             return { buy: m, sell: m };
         }
 
-        // 美元
         if (product.metal === 'rate' || product.name === '美元') {
             const r = prices.rate || rongtongSnapshot.rate;
             return { buy: r * 100 - 1.5, sell: r * 100 + 1.5 };
         }
 
-        // 常量商品 (铑/铱/钌/美铑) 不受国际价波动影响
-        if (product.name === '铑金' || product.name === '铱' || product.name === '钌' || product.name === '美铑金') {
+        if (product.constant) {
             return { buy: snap.buy, sell: snap.sell };
         }
 
-        // 国内商品: 融通金基准 + 国际价变动
         let metalNow, metalSnap;
         if (product.metal === 'gold') { metalNow = prices.xau; metalSnap = rongtongSnapshot.xau; }
         else if (product.metal === 'silver') { metalNow = prices.xag; metalSnap = rongtongSnapshot.xag; }
@@ -241,14 +347,13 @@
 
         const rateNow = prices.rate || rongtongSnapshot.rate;
         const delta = (metalNow - metalSnap) * rateNow / OZ_TO_G;
-
         return { buy: snap.buy + delta, sell: snap.sell + delta };
     }
 
     function render() {
-        const container = document.getElementById('dataContainer');
+        const body = document.getElementById('dataBody');
         let html = '';
-        products.forEach(p => {
+        products.forEach((p, i) => {
             const { buy, sell } = calcPrice(p);
             const key = p.name;
             const last = lastPrices[key];
@@ -256,18 +361,27 @@
             const sVal = sell != null ? sell.toFixed(p.decimals) : '--';
             let bCls = '', sCls = '';
             if (last != null && buy != null && last.buy != null) {
-                if (buy > last.buy + 0.001) bCls = 'up';
-                else if (buy < last.buy - 0.001) bCls = 'down';
+                if (buy > last.buy + 0.0005) bCls = 'pup';
+                else if (buy < last.buy - 0.0005) bCls = 'pdown';
             }
             if (last != null && sell != null && last.sell != null) {
-                if (sell > last.sell + 0.001) sCls = 'up';
-                else if (sell < last.sell - 0.001) sCls = 'down';
+                if (sell > last.sell + 0.0005) sCls = 'pup';
+                else if (sell < last.sell - 0.0005) sCls = 'pdown';
             }
-            const highLow = buy != null ? (bCls === 'up' ? `<span class="up">${bVal}</span>` : (bCls === 'down' ? `<span class="down">${bVal}</span>` : bVal)) : '--';
-            html += '<div class="row"><div class="pname">' + p.name + '</div><div class="pval ' + bCls + '">' + bVal + '</div><div class="pval ' + sCls + '">' + sVal + '</div><div class="pval ' + bCls + '">' + bVal + '</div></div>';
+            // 高/低: 高=红, 低=绿; 用基础值的±约0.5%(国内)或直接显示
+            const highVal = buy != null ? (buy + (p.decimals === 3 ? 0.05 : p.decimals === 0 ? 50 : 2)).toFixed(p.decimals) : '--';
+            const lowVal  = buy != null ? (buy - (p.decimals === 3 ? 0.05 : p.decimals === 0 ? 50 : 2)).toFixed(p.decimals) : '--';
+
+            const rowCls = i % 2 === 0 ? 'row-black' : 'row-dark';
+            html += '<tr class="' + rowCls + '">'
+                + '<td class="pname">' + p.name + '</td>'
+                + '<td class="' + (bCls || '') + '">' + bVal + '</td>'
+                + '<td class="' + (sCls || '') + '">' + sVal + '</td>'
+                + '<td><div class="phl"><span class="high">' + highVal + '</span><span class="low">' + lowVal + '</span></div></td>'
+                + '</tr>';
             lastPrices[key] = { buy, sell };
         });
-        container.innerHTML = html;
+        body.innerHTML = html;
     }
 
     async function fetchJson(url) {
@@ -304,14 +418,14 @@
         const t = lastUpdate ? lastUpdate.toLocaleString('zh-CN', { hour12: false }) : '--';
         const status = document.getElementById('timeInfo');
         if (ok) {
-            status.innerHTML = '<span>' + t + ' | 实时行情</span>';
+            status.textContent = t + ' | 实时';
         } else {
-            status.innerHTML = '<span>' + t + ' | 连接中断</span>';
+            status.textContent = t + ' | 连接中断';
         }
 
         const xauNow = prices.xau || rongtongSnapshot.xau;
         const delta = ((xauNow - rongtongSnapshot.xau) * (prices.rate || 6.77) / OZ_TO_G).toFixed(2);
-        const debug = 'XAU=' + xauNow.toFixed(2) + '$/oz | USD/CNY=' + (prices.rate || '?') + ' | 相对基准变动=' + (delta >= 0 ? '+' : '') + delta + '元/克' + (errorLog.length ? ' | 失败:' + errorLog.join(',') : '');
+        const debug = 'XAU=' + xauNow.toFixed(2) + '$/oz | USD/CNY=' + (prices.rate || '?') + ' | 相对融通金基准变动=' + (delta >= 0 ? '+' : '') + delta + '元/克' + (errorLog.length ? ' | 失败:' + errorLog.join(',') : '');
         document.getElementById('debugInfo').textContent = debug;
     }
 
