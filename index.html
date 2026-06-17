@@ -43,7 +43,7 @@
     <div class="table-header"><div>商品</div><div>回购</div><div>销售</div><div>高/低</div></div>
     <div id="dataContainer"></div>
     <div class="footer">
-        <div>调整规则: 黄金回购-15 销售+10 | 白银回购-4.5 销售+2 | 铂金回购-25 销售+20</div>
+        <div>数据来源: 融通金基准 + 国际金价动态校准 | 刷新: 1秒</div>
         <div class="debug-info" id="debugInfo"></div>
     </div>
     <div style="height: 70px;"></div>
@@ -59,20 +59,41 @@
     // ============ 常量 ============
     const OZ_TO_G = 31.1034768;
 
-    // ============ 溢价系数 (基于融通金940.50/销售945.80校准) ============
-    // 黄金9999: 回购942.00, 销售945.80, XAU=4359.10, 汇率6.7576
-    //   国际价=4359.10*6.7576/31.1035=947.05
-    //   黄金回购溢价=942.00/947.05=0.99468
-    //   黄金销售溢价=945.80/947.05=0.99871
-    let premiums = {
-        gold: 0.9946,        // 黄金回购溢价 (融通金942校准)
-        goldSell: 0.9987,    // 黄金销售溢价 (融通金945.80校准)
-        silver: 0.9946,
-        silverSell: 0.9985,  // 白银销售溢价
-        platinum: 0.9820,
-        platinumSell: 0.9850,// 铂金销售溢价
-        palladium: 0.9330,
-        palladiumSell: 0.9380
+    // ============ 融通金校准基准 (动态校准用) ============
+    // 维护融通金快照价格 + 对应的国际价
+    // 当 XAU 变化时, 按比例调整所有商品价格
+    // 校准公式: 当前商品 = 融通金基准 + (XAU_当前 - XAU_校准时) × 汇率 / 31.1035
+    let rongtongSnapshot = {
+        // 初始校准值 (融通金截图 2026-06-17 11:28)
+        xau: 4332.40,        // 校准时的 XAU 价格
+        xag: 70.13,          // 校准时的 XAG 价格
+        xpt: 1798.65,        // 校准时的 XPT 价格
+        xpd: 1351.73,        // 校准时的 XPD 价格
+        rate: 6.77,          // 校准时的 USD/CNY
+        // 商品名 -> {buy, sell}
+        prices: {
+            '黄金9999': { buy: 940.66, sell: 941.18 },
+            '黄金T+D': { buy: 940.23, sell: 940.41 },
+            '黄 金':  { buy: 938.03, sell: 940.03 },
+            '白 银':  { buy: 15.509, sell: 15.609 },
+            '铂 金':  { buy: 384.60, sell: 386.10 },
+            '钯 金':  { buy: 291.30, sell: 292.80 },
+            '铑金':   { buy: 1450.00, sell: 1450.00 },
+            '铱':     { buy: 1100.0, sell: 1100.0 },
+            '钌':     { buy: 240.0,  sell: 240.0 },
+            '白银T+D':{ buy: 16759,  sell: 16766 },
+            '铂金9995':{ buy: 445.00, sell: 448.20 },
+            '美黄金': { buy: 4351.10, sell: 4351.50 },
+            '美铂金': { buy: 1808.0, sell: 1808.5 },
+            '美钯金': { buy: 1356.0, sell: 1357.0 },
+            '美白银': { buy: 70.250, sell: 70.280 },
+            '美铑金': { buy: 7800.00, sell: 7800.00 },
+            '伦敦金': { buy: 4339.31, sell: 4339.66 },
+            '伦敦银': { buy: 70.130, sell: 70.189 },
+            '伦敦铂': { buy: 1809.45, sell: 1815.45 },
+            '伦敦钯': { buy: 1354.50, sell: 1363.00 },
+            '美元':   { buy: 675.71, sell: 675.76 }
+        }
     };
 
     // ============ 商品定义 ============
@@ -107,40 +128,54 @@
     let errorLog = [];
     let failCount = 0;
 
-    // ============ 价格计算 ============
+    // ============ 价格计算 (融通金基准 + 国际价动态校准) ============
     function calcPrice(product) {
+        // 直接用融通金快照中的回购/销售
         if (product.constant) {
+            // 常量商品 (铑/铱/钌/美铑) 不受国际价波动影响
+            const snap = rongtongSnapshot.prices[product.name];
+            if (snap) return { buy: snap.buy, sell: snap.sell };
             return { buy: product.constant, sell: product.constant };
         }
 
-        if (product.metal === 'rate') {
-            const v = (prices.rate || 6.77) * 100;
-            return { buy: v - 1.5, sell: v + 1.5 };
-        }
+        const snap = rongtongSnapshot.prices[product.name];
+        if (!snap) return { buy: null, sell: null };
 
-        let metalUsd = null;
-        let buyPremium = 1.0;
-        let sellPremium = 1.0;
-        if (product.metal === 'gold') { metalUsd = prices.xau; buyPremium = premiums.gold; sellPremium = premiums.goldSell; }
-        else if (product.metal === 'silver') { metalUsd = prices.xag; buyPremium = premiums.silver; sellPremium = premiums.silverSell; }
-        else if (product.metal === 'platinum') { metalUsd = prices.xpt; buyPremium = premiums.platinum; sellPremium = premiums.platinumSell; }
-        else if (product.metal === 'palladium') { metalUsd = prices.xpd; buyPremium = premiums.palladium; sellPremium = premiums.palladiumSell; }
-
-        if (!metalUsd) return { buy: null, sell: null };
-
+        // 国际类商品 (美黄金/伦敦金/oz) - 保持美元/盎司, 直接等于 XAU/XAG 等
         if (product.unit === 'oz') {
-            let factor = product.lmeFactor || 1.0;
-            const v = metalUsd * (prices.rate || 6.77) * factor;
-            return { buy: v, sell: v };
+            const factor = product.lmeFactor || 1.0;
+            let metalNow;
+            if (product.metal === 'gold') metalNow = prices.xau || rongtongSnapshot.xau;
+            else if (product.metal === 'silver') metalNow = prices.xag || rongtongSnapshot.xag;
+            else if (product.metal === 'platinum') metalNow = prices.xpt || rongtongSnapshot.xpt;
+            else if (product.metal === 'palladium') metalNow = prices.xpd || rongtongSnapshot.xpd;
+            return { buy: metalNow * factor, sell: metalNow * factor };
         }
 
-        let baseBuy = metalUsd * (prices.rate || 6.77) / OZ_TO_G * buyPremium;
-        let baseSell = metalUsd * (prices.rate || 6.77) / OZ_TO_G * sellPremium;
-        if (product.offset) {
-            baseBuy = baseBuy + product.offset;
-            baseSell = baseSell + product.offset;
+        // 美元
+        if (product.metal === 'rate' || product.name === '美元') {
+            const rateNow = prices.rate || rongtongSnapshot.rate;
+            return { buy: rateNow * 100 - 1.5, sell: rateNow * 100 + 1.5 };
         }
-        return { buy: baseBuy, sell: baseSell };
+
+        // 国内类商品: 融通金基准 + 国际价变动部分
+        // 黄金类用 XAU, 白银用 XAG, 铂金用 XPT, 钯金用 XPD
+        let metalNow, metalSnap;
+        if (product.metal === 'gold') { metalNow = prices.xau; metalSnap = rongtongSnapshot.xau; }
+        else if (product.metal === 'silver') { metalNow = prices.xag; metalSnap = rongtongSnapshot.xag; }
+        else if (product.metal === 'platinum') { metalNow = prices.xpt; metalSnap = rongtongSnapshot.xpt; }
+        else if (product.metal === 'palladium') { metalNow = prices.xpd; metalSnap = rongtongSnapshot.xpd; }
+
+        if (!metalNow) return { buy: snap.buy, sell: snap.sell };
+
+        const rateNow = prices.rate || rongtongSnapshot.rate;
+        // 国际价变动 (元/克) = (metalNow - metalSnap) × rateNow / 31.1035
+        const delta = (metalNow - metalSnap) * rateNow / OZ_TO_G;
+
+        return {
+            buy: snap.buy + delta,
+            sell: snap.sell + delta
+        };
     }
 
     // ============ 渲染 ============
@@ -274,13 +309,15 @@
         const timeStr = lastUpdate.toLocaleString('zh-CN', { hour12: false });
 
         if (ok) {
-            const goldBase = (prices.xau * (prices.rate || 6.77) / OZ_TO_G * premiums.gold).toFixed(2);
-            const debug = 'XAU=' + (prices.xau || '?') + '$/oz | USD/CNY=' + (prices.rate || '?') + ' | 黄金基准=' + goldBase + '元/克 | 溢价=' + premiums.gold.toFixed(4) + (failCount > 0 ? ' | 重试=' + failCount : '') + (errorLog.length ? ' | 错误:' + errorLog.join(',') : '');
+            const xauNow = prices.xau || rongtongSnapshot.xau;
+            const delta = ((xauNow - rongtongSnapshot.xau) * (prices.rate || 6.77) / OZ_TO_G).toFixed(2);
+            const debug = 'XAU=' + xauNow.toFixed(2) + '$/oz | USD/CNY=' + (prices.rate || '?') + ' | 国际变动=' + delta + '元/克' + (failCount > 0 ? ' | 重试=' + failCount : '') + (errorLog.length ? ' | 错误:' + errorLog.join(',') : '');
             document.getElementById('debugInfo').textContent = debug;
-            updateStatus('实时行情 · 更新于', timeStr, 'ok');
+            updateStatus('实时行情 · 融通金基准 · 更新于', timeStr, 'ok');
         } else if (prices.xau !== null) {
-            const goldBase = (prices.xau * (prices.rate || 6.77) / OZ_TO_G * premiums.gold).toFixed(2);
-            document.getElementById('debugInfo').textContent = '[使用缓存数据] XAU=' + prices.xau + ' | 黄金基准=' + goldBase + '元/克 | 错误:' + errorLog.join(',');
+            const xauNow = prices.xau || rongtongSnapshot.xau;
+            const delta = ((xauNow - rongtongSnapshot.xau) * (prices.rate || 6.77) / OZ_TO_G).toFixed(2);
+            document.getElementById('debugInfo').textContent = '[缓存] XAU=' + xauNow + ' | 国际变动=' + delta + '元/克 | 错误:' + errorLog.join(',');
             updateStatus('连接失败 · 使用缓存数据 · 上次更新于', timeStr, 'warn');
         } else {
             document.getElementById('debugInfo').textContent = '无法获取数据，请检查网络连接。错误:' + errorLog.join(',');
