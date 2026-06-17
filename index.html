@@ -240,7 +240,7 @@
     </table>
 
     <div class="page-padding"></div>
-    <div class="hint">数据来源: 融通金基准 + 国际金价实时校准</div>
+    <div class="hint">调整规则: 黄金回购-15 销售+10 | 白银回购-4.5 销售+2 | 铂金回购-25 销售+20</div>
     <div class="debug" id="debugInfo"></div>
 
     <div class="bottom-nav">
@@ -286,11 +286,11 @@
     };
 
     const products = [
-        { name: '黄金9999', metal: 'gold', decimals: 2 },
-        { name: '黄金T+D', metal: 'gold', decimals: 2 },
-        { name: '黄 金', metal: 'gold', decimals: 2 },
-        { name: '白 银', metal: 'silver', decimals: 3 },
-        { name: '铂 金', metal: 'platinum', decimals: 2 },
+        { name: '黄金9999', metal: 'gold', decimals: 2, buyAdj: -15, sellAdj: 10 },
+        { name: '黄金T+D', metal: 'gold', decimals: 2, buyAdj: -15, sellAdj: 10 },
+        { name: '黄 金', metal: 'gold', decimals: 2, buyAdj: -15, sellAdj: 10 },
+        { name: '白 银', metal: 'silver', decimals: 3, buyAdj: -4.5, sellAdj: 2 },
+        { name: '铂 金', metal: 'platinum', decimals: 2, buyAdj: -25, sellAdj: 20 },
         { name: '钯 金', metal: 'palladium', decimals: 2 },
         { name: '铑金', metal: 'gold', decimals: 2, constant: true },
         { name: '铱', metal: 'gold', decimals: 1, constant: true },
@@ -334,7 +334,9 @@
         }
 
         if (product.constant) {
-            return { buy: snap.buy, sell: snap.sell };
+            const buyAdj = product.buyAdj || 0;
+            const sellAdj = product.sellAdj || 0;
+            return { buy: snap.buy + buyAdj, sell: snap.sell + sellAdj };
         }
 
         let metalNow, metalSnap;
@@ -347,7 +349,9 @@
 
         const rateNow = prices.rate || rongtongSnapshot.rate;
         const delta = (metalNow - metalSnap) * rateNow / OZ_TO_G;
-        return { buy: snap.buy + delta, sell: snap.sell + delta };
+        const buyAdj = product.buyAdj || 0;
+        const sellAdj = product.sellAdj || 0;
+        return { buy: snap.buy + delta + buyAdj, sell: snap.sell + delta + sellAdj };
     }
 
     function render() {
