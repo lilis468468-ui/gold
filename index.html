@@ -59,12 +59,20 @@
     // ============ 常量 ============
     const OZ_TO_G = 31.1034768;
 
-    // ============ 溢价系数 (基于融通金940.50校准) ============
+    // ============ 溢价系数 (基于融通金940.50/销售945.80校准) ============
+    // 黄金9999: 回购942.00, 销售945.80, XAU=4359.10, 汇率6.7576
+    //   国际价=4359.10*6.7576/31.1035=947.05
+    //   黄金回购溢价=942.00/947.05=0.99468
+    //   黄金销售溢价=945.80/947.05=0.99871
     let premiums = {
-        gold: 0.9946,
+        gold: 0.9946,        // 黄金回购溢价 (融通金942校准)
+        goldSell: 0.9987,    // 黄金销售溢价 (融通金945.80校准)
         silver: 0.9946,
+        silverSell: 0.9985,  // 白银销售溢价
         platinum: 0.9820,
-        palladium: 0.9330
+        platinumSell: 0.9850,// 铂金销售溢价
+        palladium: 0.9330,
+        palladiumSell: 0.9380
     };
 
     // ============ 商品定义 ============
@@ -111,11 +119,12 @@
         }
 
         let metalUsd = null;
-        let premium = 1.0;
-        if (product.metal === 'gold') { metalUsd = prices.xau; premium = premiums.gold; }
-        else if (product.metal === 'silver') { metalUsd = prices.xag; premium = premiums.silver; }
-        else if (product.metal === 'platinum') { metalUsd = prices.xpt; premium = premiums.platinum; }
-        else if (product.metal === 'palladium') { metalUsd = prices.xpd; premium = premiums.palladium; }
+        let buyPremium = 1.0;
+        let sellPremium = 1.0;
+        if (product.metal === 'gold') { metalUsd = prices.xau; buyPremium = premiums.gold; sellPremium = premiums.goldSell; }
+        else if (product.metal === 'silver') { metalUsd = prices.xag; buyPremium = premiums.silver; sellPremium = premiums.silverSell; }
+        else if (product.metal === 'platinum') { metalUsd = prices.xpt; buyPremium = premiums.platinum; sellPremium = premiums.platinumSell; }
+        else if (product.metal === 'palladium') { metalUsd = prices.xpd; buyPremium = premiums.palladium; sellPremium = premiums.palladiumSell; }
 
         if (!metalUsd) return { buy: null, sell: null };
 
@@ -125,9 +134,13 @@
             return { buy: v, sell: v };
         }
 
-        let base = metalUsd * (prices.rate || 6.77) / OZ_TO_G * premium;
-        if (product.offset) base = base + product.offset;
-        return { buy: base, sell: base };
+        let baseBuy = metalUsd * (prices.rate || 6.77) / OZ_TO_G * buyPremium;
+        let baseSell = metalUsd * (prices.rate || 6.77) / OZ_TO_G * sellPremium;
+        if (product.offset) {
+            baseBuy = baseBuy + product.offset;
+            baseSell = baseSell + product.offset;
+        }
+        return { buy: baseBuy, sell: baseSell };
     }
 
     // ============ 渲染 ============
