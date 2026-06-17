@@ -106,10 +106,20 @@
         /* 促销文字 */
         .promo {
             background: #2b2b2b;
-            padding: 10px 22px 20px;
-            text-align: center;
+            padding: 10px 0 20px;
             color: #fff;
             font-size: 18px;
+            overflow: hidden;
+            white-space: nowrap;
+        }
+        .promo-text {
+            display: inline-block;
+            padding-left: 100%;
+            animation: marquee 18s linear infinite;
+        }
+        @keyframes marquee {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-100%); }
         }
         /* 表格 */
         .table {
@@ -225,7 +235,7 @@
         <span class="status-left"></span>
         <span class="time-info ok" id="timeInfo">加载中...</span>
     </div>
-    <div class="promo">大盘价购金条，高纯度、低工费、包邮包保险，买金更省心</div>
+    <div class="promo"><span class="promo-text">★ 大盘价购金条，高纯度、低工费、包邮包保险，买金更省心 ★</span></div>
 
     <table class="table">
         <thead>
@@ -363,6 +373,9 @@
             const last = lastPrices[key];
             const bVal = buy != null ? buy.toFixed(p.decimals) : '--';
             const sVal = sell != null ? sell.toFixed(p.decimals) : '--';
+            // 高/低: 高 = 销售价(红), 低 = 回购价(绿)
+            const highVal = sVal;
+            const lowVal  = bVal;
             let bCls = '', sCls = '';
             if (last != null && buy != null && last.buy != null) {
                 if (buy > last.buy + 0.0005) bCls = 'pup';
@@ -372,9 +385,6 @@
                 if (sell > last.sell + 0.0005) sCls = 'pup';
                 else if (sell < last.sell - 0.0005) sCls = 'pdown';
             }
-            // 高/低: 高=红, 低=绿; 用基础值的±约0.5%(国内)或直接显示
-            const highVal = buy != null ? (buy + (p.decimals === 3 ? 0.05 : p.decimals === 0 ? 50 : 2)).toFixed(p.decimals) : '--';
-            const lowVal  = buy != null ? (buy - (p.decimals === 3 ? 0.05 : p.decimals === 0 ? 50 : 2)).toFixed(p.decimals) : '--';
 
             const rowCls = i % 2 === 0 ? 'row-black' : 'row-dark';
             html += '<tr class="' + rowCls + '">'
