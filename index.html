@@ -43,7 +43,7 @@
     <div class="table-header"><div>商品</div><div>回购</div><div>销售</div><div>高/低</div></div>
     <div id="dataContainer"></div>
     <div class="footer">
-        <div>调整规则: 黄金回购-13 销售+18 | 白银回购-4.5 销售+2 | 铂金回购-20 销售+20</div>
+        <div>调整规则: 黄金回购-15 销售+10 | 白银回购-4.5 销售+2 | 铂金回购-25 销售+20</div>
         <div class="debug-info" id="debugInfo"></div>
     </div>
     <div style="height: 70px;"></div>
@@ -69,11 +69,11 @@
 
     // ============ 商品定义 ============
     const products = [
-        { name: '黄金9999', metal: 'gold', buyAdj: -13, sellAdj: 18, decimals: 2 },
-        { name: '黄金T+D', metal: 'gold', buyAdj: -13, sellAdj: 18, decimals: 2, offset: -0.8 },
-        { name: '黄 金', metal: 'gold', buyAdj: -13, sellAdj: 18, decimals: 2, offset: 1.0 },
+        { name: '黄金9999', metal: 'gold', buyAdj: -15, sellAdj: 10, decimals: 2 },
+        { name: '黄金T+D', metal: 'gold', buyAdj: -15, sellAdj: 10, decimals: 2, offset: -0.8 },
+        { name: '黄 金', metal: 'gold', buyAdj: -15, sellAdj: 10, decimals: 2, offset: 1.0 },
         { name: '白 银', metal: 'silver', buyAdj: -4.5, sellAdj: 2, decimals: 3 },
-        { name: '铂 金', metal: 'platinum', buyAdj: -20, sellAdj: 20, decimals: 2 },
+        { name: '铂 金', metal: 'platinum', buyAdj: -25, sellAdj: 20, decimals: 2 },
         { name: '钯 金', metal: 'palladium', buyAdj: 0, sellAdj: 0, decimals: 2 },
         { name: '铑金', metal: 'gold', buyAdj: 0, sellAdj: 0, decimals: 2, constant: 1450.00 },
         { name: '铱', metal: 'gold', buyAdj: 0, sellAdj: 0, decimals: 1, constant: 1100.0 },
@@ -278,7 +278,7 @@
     // ============ 初始化 ============
     render();
     mainLoop();
-    setInterval(mainLoop, 5000);
+    setInterval(mainLoop, 1000);
     </script>
 </body>
 </html>
