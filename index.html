@@ -198,17 +198,17 @@
         xpd: 1280.0,
         rate: 6.775,
         prices: {
-            '黄金9999': { buy: 902.30, sell: 902.82 },
-            '黄金T+D': { buy: 901.87, sell: 902.05 },
-            '黄 金':  { buy: 899.67, sell: 901.67 },
-            '白 银':  { buy: 14.381, sell: 14.481 },
-            '铂 金':  { buy: 357.39, sell: 358.89 },
-            '钯 金':  { buy: 275.64, sell: 277.14 },
+            '黄金9999': { buy: 940.66, sell: 941.18 },
+            '黄金T+D': { buy: 940.20, sell: 940.46 },
+            '黄 金':  { buy: 938.03, sell: 940.03 },
+            '白 银':  { buy: 15.509, sell: 15.609 },
+            '铂 金':  { buy: 384.70, sell: 386.10 },
+            '钯 金':  { buy: 291.40, sell: 292.90 },
             '铑金':   { buy: 1450.00, sell: 1450.00 },
             '铱':     { buy: 1100.0, sell: 1100.0 },
             '钌':     { buy: 240.0,  sell: 240.0 },
             '白银T+D':{ buy: 16758,  sell: 16765 },
-            '铂金9995':{ buy: 417.79, sell: 420.99 },
+            '铂金9995':{ buy: 448.20, sell: 448.20 },
             '美黄金': { buy: 4156.70, sell: 4156.70 },
             '美铂金': { buy: 1674.0, sell: 1674.0 },
             '美钯金': { buy: 1280.0, sell: 1280.0 },
@@ -223,29 +223,29 @@
     };
 
     // ============ 商品定义 & 调整规则 ============
-    // buyAdj: 回购价调整量  sellAdj: 销售价调整量
+    // buyAdj: 回购调整, sellAdj: 销售调整, highAdj: 高=销售+highAdj, lowAdj: 低=回购+lowAdj
     const products = [
-        { name: '黄金9999', metal: 'gold',    decimals: 2, buyAdj: -15, sellAdj: +10 },
-        { name: '黄金T+D', metal: 'gold',    decimals: 2, buyAdj: -15, sellAdj: +10 },
-        { name: '黄 金',   metal: 'gold',    decimals: 2, buyAdj: -15, sellAdj: +10 },
-        { name: '白 银',   metal: 'silver',  decimals: 3, buyAdj: -4.5, sellAdj: +2 },
-        { name: '铂 金',   metal: 'platinum', decimals: 2, buyAdj: -25, sellAdj: +20 },
-        { name: '钯 金',   metal: 'palladium', decimals: 2, buyAdj: 0, sellAdj: 0 },
-        { name: '铑金',    metal: 'gold',    decimals: 2, buyAdj: 0, sellAdj: 0, constant: true },
-        { name: '铱',      metal: 'gold',    decimals: 1, buyAdj: 0, sellAdj: 0, constant: true },
-        { name: '钌',      metal: 'gold',    decimals: 1, buyAdj: 0, sellAdj: 0, constant: true },
-        { name: '白银T+D', metal: 'silver',  decimals: 0, buyAdj: 0, sellAdj: 0 },
-        { name: '铂金9995', metal: 'platinum', decimals: 2, buyAdj: 0, sellAdj: 0 },
-        { name: '美黄金',  metal: 'gold',    decimals: 2, buyAdj: 0, sellAdj: 0, unit: 'oz' },
-        { name: '美铂金',  metal: 'platinum', decimals: 1, buyAdj: 0, sellAdj: 0, unit: 'oz' },
-        { name: '美钯金',  metal: 'palladium', decimals: 1, buyAdj: 0, sellAdj: 0, unit: 'oz' },
-        { name: '美白银',  metal: 'silver',  decimals: 3, buyAdj: 0, sellAdj: 0, unit: 'oz' },
-        { name: '美铑金',  metal: 'gold',    decimals: 2, buyAdj: 0, sellAdj: 0, constant: true },
-        { name: '伦敦金',  metal: 'gold',    decimals: 2, buyAdj: 0, sellAdj: 0, unit: 'oz' },
-        { name: '伦敦银',  metal: 'silver',  decimals: 3, buyAdj: 0, sellAdj: 0, unit: 'oz' },
-        { name: '伦敦铂',  metal: 'platinum', decimals: 2, buyAdj: 0, sellAdj: 0, unit: 'oz' },
-        { name: '伦敦钯',  metal: 'palladium', decimals: 2, buyAdj: 0, sellAdj: 0, unit: 'oz' },
-        { name: '美元',    metal: 'rate',    decimals: 2, buyAdj: 0, sellAdj: 0 }
+        { name: '黄金9999', metal: 'gold',    decimals: 2, buyAdj: -15, sellAdj: +10, highAdj: +4,    lowAdj: -3   },
+        { name: '黄金T+D', metal: 'gold',    decimals: 2, buyAdj: -15, sellAdj: +10, highAdj: +4,    lowAdj: -3   },
+        { name: '黄 金',   metal: 'gold',    decimals: 2, buyAdj: -15, sellAdj: +10, highAdj: +4,    lowAdj: -3   },
+        { name: '白 银',   metal: 'silver',  decimals: 3, buyAdj: -4.5, sellAdj: +2,  highAdj: +0.1,  lowAdj: -0.06 },
+        { name: '铂 金',   metal: 'platinum', decimals: 2, buyAdj: -25, sellAdj: +20, highAdj: +6,    lowAdj: +1   },
+        { name: '钯 金',   metal: 'palladium', decimals: 2, buyAdj: 0,  sellAdj: 0,   highAdj: +4,    lowAdj: +1   },
+        { name: '铑金',    metal: 'gold',    decimals: 2, buyAdj: 0,   sellAdj: 0,    highAdj: +5,    lowAdj: -5,  constant: true },
+        { name: '铱',      metal: 'gold',    decimals: 1, buyAdj: 0,   sellAdj: 0,    highAdj: +3,    lowAdj: -3,  constant: true },
+        { name: '钌',      metal: 'gold',    decimals: 1, buyAdj: 0,   sellAdj: 0,    highAdj: +2,    lowAdj: -2,  constant: true },
+        { name: '白银T+D', metal: 'silver',  decimals: 0, buyAdj: 0,   sellAdj: 0,    highAdj: +50,   lowAdj: -50  },
+        { name: '铂金9995', metal: 'platinum', decimals: 2, buyAdj: 0,  sellAdj: 0,    highAdj: +10,   lowAdj: -5   },
+        { name: '美黄金',  metal: 'gold',    decimals: 2, buyAdj: 0,   sellAdj: 0,    highAdj: +15,   lowAdj: -15, unit: 'oz' },
+        { name: '美铂金',  metal: 'platinum', decimals: 1, buyAdj: 0,  sellAdj: 0,    highAdj: +20,   lowAdj: -20, unit: 'oz' },
+        { name: '美钯金',  metal: 'palladium', decimals: 1, buyAdj: 0, sellAdj: 0,    highAdj: +20,   lowAdj: -20, unit: 'oz' },
+        { name: '美白银',  metal: 'silver',  decimals: 3, buyAdj: 0,   sellAdj: 0,    highAdj: +0.15, lowAdj: -0.15, unit: 'oz' },
+        { name: '美铑金',  metal: 'gold',    decimals: 2, buyAdj: 0,   sellAdj: 0,    highAdj: +50,   lowAdj: -50, constant: true },
+        { name: '伦敦金',  metal: 'gold',    decimals: 2, buyAdj: 0,   sellAdj: 0,    highAdj: +15,   lowAdj: -15, unit: 'oz' },
+        { name: '伦敦银',  metal: 'silver',  decimals: 3, buyAdj: 0,   sellAdj: 0,    highAdj: +0.15, lowAdj: -0.15, unit: 'oz' },
+        { name: '伦敦铂',  metal: 'platinum', decimals: 2, buyAdj: 0,  sellAdj: 0,    highAdj: +20,   lowAdj: -20, unit: 'oz' },
+        { name: '伦敦钯',  metal: 'palladium', decimals: 2, buyAdj: 0, sellAdj: 0,    highAdj: +20,   lowAdj: -20, unit: 'oz' },
+        { name: '美元',    metal: 'rate',    decimals: 2, buyAdj: 0,   sellAdj: 0,    highAdj: +3,    lowAdj: -3 }
     ];
 
     let prices = { xau: null, xag: null, xpt: null, xpd: null, rate: null };
@@ -308,6 +308,9 @@
             const last = lastPrices[key];
             const bVal = buy != null ? buy.toFixed(p.decimals) : '--';
             const sVal = sell != null ? sell.toFixed(p.decimals) : '--';
+            // 高 = 销售 + highAdj, 低 = 回购 + lowAdj
+            const highVal = sell != null ? (sell + (p.highAdj || 0)).toFixed(p.decimals) : '--';
+            const lowVal  = buy != null ? (buy + (p.lowAdj || 0)).toFixed(p.decimals) : '--';
 
             let bCls = '', sCls = '';
             if (last && last.buy != null && buy != null) {
@@ -324,7 +327,7 @@
                 + `<td class="pname">${p.name}</td>`
                 + `<td class="${bCls}">${bVal}</td>`
                 + `<td class="${sCls}">${sVal}</td>`
-                + `<td><div class="highlow"><span class="h">${sVal}</span><span class="l">${bVal}</span></div></td>`
+                + `<td><div class="highlow"><span class="h">${highVal}</span><span class="l">${lowVal}</span></div></td>`
                 + `</tr>`;
             lastPrices[key] = { buy, sell };
         });
