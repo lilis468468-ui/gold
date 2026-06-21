@@ -7,12 +7,13 @@
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
-            background: #1f1f1f;
+            font-family: "PingFang SC", "Microsoft YaHei", -apple-system, sans-serif;
+            background: #262626;
             color: #fff;
             min-height: 100vh;
+            font-size: 22px;
         }
-        /* 顶部 LOGO */
+        /* 顶部 LOGO 栏 */
         .top-bar {
             background: #2b2b2b;
             padding: 14px 22px;
@@ -20,57 +21,112 @@
             justify-content: space-between;
             align-items: center;
         }
-        .logo { display: flex; align-items: center; gap: 14px; }
+        .logo {
+            display: flex;
+            align-items: flex-start;
+            gap: 14px;
+        }
         .logo-mark {
-            width: 54px; height: 54px;
-            display: flex; align-items: center; justify-content: center;
-            color: #fff; font-size: 28px; font-weight: bold;
+            width: 54px;
+            height: 54px;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
-        .logo-text { display: flex; flex-direction: column; line-height: 1.1; }
-        .logo-cn { font-size: 30px; color: #fff; font-weight: bold; letter-spacing: 3px; }
-        .logo-en { font-size: 13px; color: #fff; letter-spacing: 2px; margin-top: 2px; }
-        .qr-wrap { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+        .logo-mark svg {
+            width: 100%;
+            height: 100%;
+        }
+        .logo-texts {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            line-height: 1.15;
+        }
+        .logo-cn {
+            font-size: 30px;
+            color: #fff;
+            font-weight: bold;
+            letter-spacing: 3px;
+        }
+        .logo-en {
+            font-size: 13px;
+            color: #fff;
+            letter-spacing: 1px;
+            margin-top: 2px;
+        }
+        .logo-sub {
+            font-size: 12px;
+            color: #fff;
+            margin-top: 2px;
+            letter-spacing: 1px;
+        }
+        .qr-wrap {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+        }
         .qr-code {
-            width: 90px; height: 90px;
-            background: #fff; color: #000;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 11px; text-align: center;
+            width: 90px;
+            height: 90px;
+            background: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #000;
+            font-size: 11px;
+            text-align: center;
+            border: 1px solid #ccc;
         }
-        .qr-caption { color: #fff; font-size: 13px; }
-
+        .qr-caption {
+            color: #fff;
+            font-size: 13px;
+        }
+        /* 分割线 */
+        .divider {
+            height: 3px;
+            background: #fff;
+        }
         /* 状态栏 */
         .status-line {
             background: #2b2b2b;
             padding: 12px 22px;
-            display: flex; justify-content: space-between; align-items: center;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
             font-size: 22px;
         }
+        .status-left {
+            color: #fff;
+        }
         .time-info { color: #ff3b3b; font-weight: 500; }
-
-        /* 促销滚动文字 */
+        .time-info.ok { color: #ff3b3b; }
+        /* 促销文字 */
         .promo {
             background: #2b2b2b;
             padding: 10px 0 20px;
+            color: #fff;
             font-size: 18px;
-            overflow: hidden; white-space: nowrap;
+            overflow: hidden;
+            white-space: nowrap;
         }
         .promo-text {
             display: inline-block;
             padding-left: 100%;
-            animation: marquee 20s linear infinite;
-            color: #fff;
+            animation: marquee 18s linear infinite;
         }
         @keyframes marquee {
             0% { transform: translateX(0); }
             100% { transform: translateX(-100%); }
         }
-
         /* 表格 */
-        table {
+        .table {
             width: 100%;
             border-collapse: collapse;
         }
-        table th {
+        .table th {
             background: #000;
             color: #fff;
             font-size: 26px;
@@ -79,89 +135,110 @@
             text-align: center;
             border: 2px solid #1a1a1a;
         }
-        table td {
+        .table td {
             padding: 18px 10px;
             text-align: center;
             font-size: 26px;
             font-weight: 500;
             border: 2px solid #1a1a1a;
         }
-        tr.row-dark { background: #2b2b2b; }
-        tr.row-black { background: #000; }
-        td.pname { color: #e6a84b; text-align: left; padding-left: 30px; font-size: 26px; }
-        td.pup { color: #ff3b3b; }
-        td.pdown { color: #22c55e; }
-        td.highlow { display: flex; flex-direction: column; gap: 4px; line-height: 1.2; }
-        td.highlow .h { color: #ff3b3b; }
-        td.highlow .l { color: #22c55e; }
-
-        /* 提示行 */
+        .row-black { background: #000; }
+        .row-dark { background: #2b2b2b; }
+        .pname { color: #e6a84b; }
+        .pup { color: #ff3b3b; }
+        .pdown { color: #22c55e; }
+        .phl {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            line-height: 1.2;
+        }
+        .phl .high { color: #ff3b3b; }
+        .phl .low { color: #22c55e; }
         .hint {
-            color: #e6a84b;
+            color: #888;
             padding: 14px 20px 16px;
             text-align: center;
             font-size: 18px;
             background: #2b2b2b;
             border-top: 1px solid #3a3a3a;
-            font-weight: 500;
         }
-        .hint span { color: #ff3b3b; font-weight: bold; margin: 0 4px; }
+        .hint span { color: #ff3b3b; font-weight: bold; }
         .debug {
-            color: #666; padding: 8px 20px 80px;
-            font-size: 12px; line-height: 1.6; background: #1a1a1a;
+            color: #555;
+            padding: 8px 20px 16px;
+            font-size: 11px;
+            line-height: 1.6;
+            background: #1a1a1a;
         }
-
         /* 底部导航 */
         .bottom-nav {
-            position: fixed; bottom: 0; left: 0; right: 0;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
             background: #3a3a3a;
-            display: flex; justify-content: space-around; align-items: center;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
             height: 70px;
             border-top: 1px solid #4a4a4a;
             z-index: 10;
         }
         .nav-item {
-            flex: 1; height: 100%;
-            display: flex; flex-direction: column;
-            align-items: center; justify-content: center;
-            color: #fff; font-size: 14px;
+            flex: 1;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-size: 14px;
         }
-        .nav-item.active { color: #409eff; }
-        .nav-icon { font-size: 28px; margin-bottom: 4px; }
-
+        .nav-item.active { color: #3da3ff; }
+        .nav-icon {
+            font-size: 28px;
+            margin-bottom: 4px;
+        }
+        .page-padding { height: 80px; }
         @media (max-width: 520px) {
-            table th, table td { font-size: 18px; padding: 14px 8px; }
-            td.pname { padding-left: 14px; font-size: 18px; }
-            .logo-cn { font-size: 22px; }
-            .logo-mark { width: 40px; height: 40px; font-size: 20px; }
-            .qr-code { width: 60px; height: 60px; }
-            .status-line { font-size: 18px; padding: 10px 16px; }
+            body { font-size: 18px; }
+            .table th { font-size: 20px; padding: 14px 6px; }
+            .table td { font-size: 20px; padding: 14px 6px; }
+            .logo-cn { font-size: 24px; }
+            .logo-mark { width: 44px; height: 44px; }
+            .qr-code { width: 70px; height: 70px; }
+            .status-line { font-size: 18px; }
+            .promo { font-size: 15px; }
         }
     </style>
 </head>
 <body>
     <div class="top-bar">
         <div class="logo">
-            <div class="logo-mark">金</div>
-            <div class="logo-text">
+            <div class="logo-mark">
+                <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M 0 95 L 20 40 L 35 65 L 50 20 L 65 65 L 80 40 L 100 95 Z" fill="none" stroke="#fff" stroke-width="3"/>
+                    <text x="10" y="90" font-size="14" fill="#fff" font-weight="bold">PMSP</text>
+                </svg>
+            </div>
+            <div class="logo-texts">
                 <div class="logo-cn">融通金</div>
                 <div class="logo-en">RONGTONG GOLD</div>
             </div>
         </div>
         <div class="qr-wrap">
-            <div class="qr-code">扫码查看</div>
-            <div class="qr-caption">黄金大盘价</div>
+            <div class="qr-code">二维码</div>
+            <div class="qr-caption">黄金大盘价 扫码购</div>
         </div>
     </div>
-
+    <div class="divider"></div>
     <div class="status-line">
-        <span></span>
-        <span class="time-info" id="timeInfo">加载中...</span>
+        <span class="status-left"></span>
+        <span class="time-info ok" id="timeInfo">加载中...</span>
     </div>
-
     <div class="promo"><span class="promo-text">★ 大盘价购金条，高纯度、低工费、包邮包保险，买金更省心 ★</span></div>
-
-    <table>
+    <table class="table">
         <thead>
             <tr>
                 <th style="width:25%">商品</th>
@@ -172,11 +249,9 @@
         </thead>
         <tbody id="dataBody"></tbody>
     </table>
-
-    <div style="height:80px"></div>
-    <div class="hint" id="priceHint">黄金9999 回购 <span id="hintBuy">--</span> 销售 <span id="hintSell">--</span></div>
+    <div class="page-padding"></div>
+    <div class="hint" id="priceHint">黄金9999 回购 <span id="hintBuy">--</span> 销售 <span id="hintSell">--</span> | 调整规则: 黄金回购-15 销售+10 | 白银回购-4.5 销售+2 | 铂金回购-25 销售+20</div>
     <div class="debug" id="debugInfo"></div>
-
     <div class="bottom-nav">
         <div class="nav-item active"><div class="nav-icon">📊</div><div>行情</div></div>
         <div class="nav-item"><div class="nav-icon">📋</div><div>基差</div></div>
@@ -184,73 +259,70 @@
         <div class="nav-item"><div class="nav-icon">⚡</div><div>快讯</div></div>
         <div class="nav-item"><div class="nav-icon">🛒</div><div>商城</div></div>
     </div>
-
     <script>
     const OZ_TO_G = 31.1034768;
 
-    // ============ 融通金基准快照 (用于 delta 计算) ============
-    // 基准快照: XAU=4156.70 汇率=6.775 对应商品基准价
-    // 如需重新校准: 修改以下值即可
+    // ============ 融通金基准快照 (XAU=4332.40时的实际价格) ============
     let rongtongSnapshot = {
-        xau: 4156.70,
-        xag: 64.961,
-        xpt: 1674.0,
-        xpd: 1280.0,
-        rate: 6.775,
+        xau: 4332.40,
+        xag: 70.13,
+        xpt: 1798.65,
+        xpd: 1351.73,
+        rate: 6.77,
         prices: {
             '黄金9999': { buy: 940.66, sell: 941.18 },
-            '黄金T+D': { buy: 940.20, sell: 940.46 },
+            '黄金T+D': { buy: 940.23, sell: 940.41 },
             '黄 金':  { buy: 938.03, sell: 940.03 },
             '白 银':  { buy: 15.509, sell: 15.609 },
-            '铂 金':  { buy: 384.70, sell: 386.10 },
-            '钯 金':  { buy: 291.40, sell: 292.90 },
+            '铂 金':  { buy: 384.60, sell: 386.10 },
+            '钯 金':  { buy: 291.30, sell: 292.80 },
             '铑金':   { buy: 1450.00, sell: 1450.00 },
             '铱':     { buy: 1100.0, sell: 1100.0 },
             '钌':     { buy: 240.0,  sell: 240.0 },
-            '白银T+D':{ buy: 16758,  sell: 16765 },
-            '铂金9995':{ buy: 448.20, sell: 448.20 },
-            '美黄金': { buy: 4156.70, sell: 4156.70 },
-            '美铂金': { buy: 1674.0, sell: 1674.0 },
-            '美钯金': { buy: 1280.0, sell: 1280.0 },
-            '美白银': { buy: 64.961, sell: 64.961 },
+            '白银T+D':{ buy: 16759,  sell: 16766 },
+            '铂金9995':{ buy: 445.00, sell: 448.20 },
+            '美黄金': { buy: 4351.10, sell: 4351.50 },
+            '美铂金': { buy: 1808.0, sell: 1808.5 },
+            '美钯金': { buy: 1356.0, sell: 1357.0 },
+            '美白银': { buy: 70.250, sell: 70.280 },
             '美铑金': { buy: 7800.00, sell: 7800.00 },
-            '伦敦金': { buy: 4156.70, sell: 4156.70 },
-            '伦敦银': { buy: 64.961, sell: 64.961 },
-            '伦敦铂': { buy: 1674.00, sell: 1674.00 },
-            '伦敦钯': { buy: 1280.00, sell: 1280.00 },
-            '美元':   { buy: 677.50, sell: 680.50 }
+            '伦敦金': { buy: 4339.31, sell: 4339.66 },
+            '伦敦银': { buy: 70.130, sell: 70.189 },
+            '伦敦铂': { buy: 1809.45, sell: 1815.45 },
+            '伦敦钯': { buy: 1354.50, sell: 1363.00 },
+            '美元':   { buy: 675.71, sell: 675.76 }
         }
     };
 
     // ============ 商品定义 & 调整规则 ============
-    // buyAdj: 回购调整, sellAdj: 销售调整, highAdj: 高=销售+highAdj, lowAdj: 低=回购+lowAdj
     const products = [
-        { name: '黄金9999', metal: 'gold',    decimals: 2, buyAdj: -15, sellAdj: +10, highAdj: +4,    lowAdj: -3   },
-        { name: '黄金T+D', metal: 'gold',    decimals: 2, buyAdj: -15, sellAdj: +10, highAdj: +4,    lowAdj: -3   },
-        { name: '黄 金',   metal: 'gold',    decimals: 2, buyAdj: -15, sellAdj: +10, highAdj: +4,    lowAdj: -3   },
-        { name: '白 银',   metal: 'silver',  decimals: 3, buyAdj: -4.5, sellAdj: +2,  highAdj: +0.1,  lowAdj: -0.06 },
-        { name: '铂 金',   metal: 'platinum', decimals: 2, buyAdj: -25, sellAdj: +20, highAdj: +6,    lowAdj: +1   },
-        { name: '钯 金',   metal: 'palladium', decimals: 2, buyAdj: 0,  sellAdj: 0,   highAdj: +4,    lowAdj: +1   },
-        { name: '铑金',    metal: 'gold',    decimals: 2, buyAdj: 0,   sellAdj: 0,    highAdj: +5,    lowAdj: -5,  constant: true },
-        { name: '铱',      metal: 'gold',    decimals: 1, buyAdj: 0,   sellAdj: 0,    highAdj: +3,    lowAdj: -3,  constant: true },
-        { name: '钌',      metal: 'gold',    decimals: 1, buyAdj: 0,   sellAdj: 0,    highAdj: +2,    lowAdj: -2,  constant: true },
-        { name: '白银T+D', metal: 'silver',  decimals: 0, buyAdj: 0,   sellAdj: 0,    highAdj: +50,   lowAdj: -50  },
-        { name: '铂金9995', metal: 'platinum', decimals: 2, buyAdj: 0,  sellAdj: 0,    highAdj: +10,   lowAdj: -5   },
-        { name: '美黄金',  metal: 'gold',    decimals: 2, buyAdj: 0,   sellAdj: 0,    highAdj: +15,   lowAdj: -15, unit: 'oz' },
-        { name: '美铂金',  metal: 'platinum', decimals: 1, buyAdj: 0,  sellAdj: 0,    highAdj: +20,   lowAdj: -20, unit: 'oz' },
-        { name: '美钯金',  metal: 'palladium', decimals: 1, buyAdj: 0, sellAdj: 0,    highAdj: +20,   lowAdj: -20, unit: 'oz' },
-        { name: '美白银',  metal: 'silver',  decimals: 3, buyAdj: 0,   sellAdj: 0,    highAdj: +0.15, lowAdj: -0.15, unit: 'oz' },
-        { name: '美铑金',  metal: 'gold',    decimals: 2, buyAdj: 0,   sellAdj: 0,    highAdj: +50,   lowAdj: -50, constant: true },
-        { name: '伦敦金',  metal: 'gold',    decimals: 2, buyAdj: 0,   sellAdj: 0,    highAdj: +15,   lowAdj: -15, unit: 'oz' },
-        { name: '伦敦银',  metal: 'silver',  decimals: 3, buyAdj: 0,   sellAdj: 0,    highAdj: +0.15, lowAdj: -0.15, unit: 'oz' },
-        { name: '伦敦铂',  metal: 'platinum', decimals: 2, buyAdj: 0,  sellAdj: 0,    highAdj: +20,   lowAdj: -20, unit: 'oz' },
-        { name: '伦敦钯',  metal: 'palladium', decimals: 2, buyAdj: 0, sellAdj: 0,    highAdj: +20,   lowAdj: -20, unit: 'oz' },
-        { name: '美元',    metal: 'rate',    decimals: 2, buyAdj: 0,   sellAdj: 0,    highAdj: +3,    lowAdj: -3 }
+        { name: '黄金9999', metal: 'gold',    decimals: 2, buyAdj: -15, sellAdj: 10 },
+        { name: '黄金T+D', metal: 'gold',    decimals: 2, buyAdj: -15, sellAdj: 10 },
+        { name: '黄 金',   metal: 'gold',    decimals: 2, buyAdj: -15, sellAdj: 10 },
+        { name: '白 银',   metal: 'silver',  decimals: 3, buyAdj: -4.5, sellAdj: 2 },
+        { name: '铂 金',   metal: 'platinum', decimals: 2, buyAdj: -25, sellAdj: 20 },
+        { name: '钯 金',   metal: 'palladium', decimals: 2, buyAdj: 0,  sellAdj: 0 },
+        { name: '铑金',    metal: 'gold',    decimals: 2, buyAdj: 0,   sellAdj: 0, constant: true },
+        { name: '铱',      metal: 'gold',    decimals: 1, buyAdj: 0,   sellAdj: 0, constant: true },
+        { name: '钌',      metal: 'gold',    decimals: 1, buyAdj: 0,   sellAdj: 0, constant: true },
+        { name: '白银T+D', metal: 'silver',  decimals: 0, buyAdj: 0,   sellAdj: 0 },
+        { name: '铂金9995', metal: 'platinum', decimals: 2, buyAdj: 0, sellAdj: 0 },
+        { name: '美黄金',  metal: 'gold',    decimals: 2, buyAdj: 0,   sellAdj: 0, unit: 'oz' },
+        { name: '美铂金',  metal: 'platinum', decimals: 1, buyAdj: 0, sellAdj: 0, unit: 'oz' },
+        { name: '美钯金',  metal: 'palladium', decimals: 1, buyAdj: 0, sellAdj: 0, unit: 'oz' },
+        { name: '美白银',  metal: 'silver',  decimals: 3, buyAdj: 0,   sellAdj: 0, unit: 'oz' },
+        { name: '美铑金',  metal: 'gold',    decimals: 2, buyAdj: 0,   sellAdj: 0, constant: true },
+        { name: '伦敦金',  metal: 'gold',    decimals: 2, buyAdj: 0,   sellAdj: 0, unit: 'oz' },
+        { name: '伦敦银',  metal: 'silver',  decimals: 3, buyAdj: 0,   sellAdj: 0, unit: 'oz' },
+        { name: '伦敦铂',  metal: 'platinum', decimals: 2, buyAdj: 0, sellAdj: 0, unit: 'oz' },
+        { name: '伦敦钯',  metal: 'palladium', decimals: 2, buyAdj: 0, sellAdj: 0, unit: 'oz' },
+        { name: '美元',    metal: 'rate',    decimals: 2, buyAdj: 0,   sellAdj: 0 }
     ];
 
     let prices = { xau: null, xag: null, xpt: null, xpd: null, rate: null };
     let lastPrices = {};
-    let fetchErrors = {};
+    let lastUpdate = null;
+    let errorLog = [];
 
     // ============ 价格计算核心 ============
     function calcPrice(product) {
@@ -259,42 +331,43 @@
 
         // 国际商品 (美元/盎司): 直接取当前国际价
         if (product.unit === 'oz') {
-            let m = null;
+            let m;
             if (product.metal === 'gold') m = prices.xau;
             else if (product.metal === 'silver') m = prices.xag;
             else if (product.metal === 'platinum') m = prices.xpt;
             else if (product.metal === 'palladium') m = prices.xpd;
-            if (m == null) m = snap.buy; // 回退基准
+            if (!m) return { buy: snap.buy, sell: snap.sell };
             return { buy: m, sell: m };
         }
 
         // 美元汇率
         if (product.metal === 'rate' || product.name === '美元') {
-            const r = prices.rate != null ? prices.rate : rongtongSnapshot.rate;
+            const r = prices.rate || rongtongSnapshot.rate;
             return { buy: r * 100 - 1.5, sell: r * 100 + 1.5 };
         }
 
         // 常量商品 (铑/铱/钌/美铑): 直接用基准
         if (product.constant) {
-            return { buy: snap.buy, sell: snap.sell };
+            return { buy: snap.buy + (product.buyAdj || 0), sell: snap.sell + (product.sellAdj || 0) };
         }
 
-        // 国内商品 (人民币/克): 融通金基准 + 国际价变动delta + 用户调整
+        // 国内商品 (人民币/克): 融通金基准 + 国际价变动delta + 调整值
         let metalNow, metalSnap;
         if (product.metal === 'gold') { metalNow = prices.xau; metalSnap = rongtongSnapshot.xau; }
         else if (product.metal === 'silver') { metalNow = prices.xag; metalSnap = rongtongSnapshot.xag; }
         else if (product.metal === 'platinum') { metalNow = prices.xpt; metalSnap = rongtongSnapshot.xpt; }
         else if (product.metal === 'palladium') { metalNow = prices.xpd; metalSnap = rongtongSnapshot.xpd; }
 
-        const rateNow = prices.rate != null ? prices.rate : rongtongSnapshot.rate;
-        let delta = 0;
-        if (metalNow != null && metalSnap != null) {
-            delta = (metalNow - metalSnap) * rateNow / OZ_TO_G;
-        }
+        if (!metalNow) return { buy: snap.buy + (product.buyAdj || 0), sell: snap.sell + (product.sellAdj || 0) };
+
+        const rateNow = prices.rate || rongtongSnapshot.rate;
+        const delta = (metalNow - metalSnap) * rateNow / OZ_TO_G;
+        const buyAdj = product.buyAdj || 0;
+        const sellAdj = product.sellAdj || 0;
 
         return {
-            buy: snap.buy + delta + (product.buyAdj || 0),
-            sell: snap.sell + delta + (product.sellAdj || 0)
+            buy: snap.buy + delta + buyAdj,
+            sell: snap.sell + delta + sellAdj
         };
     }
 
@@ -302,38 +375,39 @@
     function render() {
         const body = document.getElementById('dataBody');
         let html = '';
-        products.forEach((p, i) => {
-            const { buy, sell } = calcPrice(p);
+        products.forEach(function(p, i) {
+            const result = calcPrice(p);
+            const buy = result.buy, sell = result.sell;
             const key = p.name;
             const last = lastPrices[key];
             const bVal = buy != null ? buy.toFixed(p.decimals) : '--';
             const sVal = sell != null ? sell.toFixed(p.decimals) : '--';
-            // 高 = 销售 + highAdj, 低 = 回购 + lowAdj
-            const highVal = sell != null ? (sell + (p.highAdj || 0)).toFixed(p.decimals) : '--';
-            const lowVal  = buy != null ? (buy + (p.lowAdj || 0)).toFixed(p.decimals) : '--';
+            // 高/低: 高=销售价(红), 低=回购价(绿)
+            const highVal = sVal;
+            const lowVal  = bVal;
 
             let bCls = '', sCls = '';
-            if (last && last.buy != null && buy != null) {
+            if (last != null && buy != null && last.buy != null) {
                 if (buy > last.buy + 0.0005) bCls = 'pup';
                 else if (buy < last.buy - 0.0005) bCls = 'pdown';
             }
-            if (last && last.sell != null && sell != null) {
+            if (last != null && sell != null && last.sell != null) {
                 if (sell > last.sell + 0.0005) sCls = 'pup';
                 else if (sell < last.sell - 0.0005) sCls = 'pdown';
             }
 
             const rowCls = i % 2 === 0 ? 'row-black' : 'row-dark';
-            html += `<tr class="${rowCls}">`
-                + `<td class="pname">${p.name}</td>`
-                + `<td class="${bCls}">${bVal}</td>`
-                + `<td class="${sCls}">${sVal}</td>`
-                + `<td><div class="highlow"><span class="h">${highVal}</span><span class="l">${lowVal}</span></div></td>`
-                + `</tr>`;
-            lastPrices[key] = { buy, sell };
+            html += '<tr class="' + rowCls + '">'
+                + '<td class="pname">' + p.name + '</td>'
+                + '<td class="' + (bCls || '') + '">' + bVal + '</td>'
+                + '<td class="' + (sCls || '') + '">' + sVal + '</td>'
+                + '<td><div class="phl"><span class="high">' + highVal + '</span><span class="low">' + lowVal + '</span></div></td>'
+                + '</tr>';
+            lastPrices[key] = { buy: buy, sell: sell };
         });
         body.innerHTML = html;
 
-        // 更新顶部黄金9999提示
+        // 黄金9999 底部提示
         const gold = calcPrice(products[0]);
         if (gold.buy != null) {
             document.getElementById('hintBuy').textContent = gold.buy.toFixed(2);
@@ -350,65 +424,52 @@
 
     async function mainLoop() {
         let ok = true;
-        fetchErrors = {};
-
+        errorLog = [];
         try {
-            const results = await Promise.allSettled([
-                fetchJson('https://api.gold-api.com/price/XAU'),
-                fetchJson('https://api.gold-api.com/price/XAG'),
-                fetchJson('https://api.gold-api.com/price/XPT'),
-                fetchJson('https://api.gold-api.com/price/XPD'),
-                fetchJson('https://api.exchangerate-api.com/v4/latest/USD')
+            const results = await Promise.all([
+                fetchJson('https://api.gold-api.com/price/XAU').then(function(d) { return d.price; }).catch(function(e) { errorLog.push('XAU'); return null; }),
+                fetchJson('https://api.gold-api.com/price/XAG').then(function(d) { return d.price; }).catch(function(e) { errorLog.push('XAG'); return null; }),
+                fetchJson('https://api.gold-api.com/price/XPT').then(function(d) { return d.price; }).catch(function(e) { errorLog.push('XPT'); return null; }),
+                fetchJson('https://api.gold-api.com/price/XPD').then(function(d) { return d.price; }).catch(function(e) { errorLog.push('XPD'); return null; }),
+                fetchJson('https://api.exchangerate-api.com/v4/latest/USD').then(function(d) { return d.rates.CNY; }).catch(function(e) { errorLog.push('汇率'); return null; })
             ]);
 
-            if (results[0].status === 'fulfilled') {
-                prices.xau = results[0].value.price != null ? results[0].value.price : results[0].value.buy;
-            } else { fetchErrors.XAU = true; ok = false; }
-
-            if (results[1].status === 'fulfilled') {
-                prices.xag = results[1].value.price != null ? results[1].value.price : results[1].value.buy;
-            } else { fetchErrors.XAG = true; }
-
-            if (results[2].status === 'fulfilled') {
-                prices.xpt = results[2].value.price != null ? results[2].value.price : results[2].value.buy;
-            } else { fetchErrors.XPT = true; }
-
-            if (results[3].status === 'fulfilled') {
-                prices.xpd = results[3].value.price != null ? results[3].value.price : results[3].value.buy;
-            } else { fetchErrors.XPD = true; }
-
-            if (results[4].status === 'fulfilled') {
-                prices.rate = results[4].value.rates.CNY;
-            } else { fetchErrors.Rate = true; }
+            const xau = results[0], xag = results[1], xpt = results[2], xpd = results[3], rate = results[4];
+            if (xau != null) prices.xau = xau;
+            if (xag != null) prices.xag = xag;
+            if (xpt != null) prices.xpt = xpt;
+            if (xpd != null) prices.xpd = xpd;
+            if (rate != null) prices.rate = rate;
+            if (!prices.xau || !prices.rate) ok = false;
         } catch (e) {
-            fetchErrors.Network = true;
             ok = false;
         }
 
         render();
 
         const now = new Date();
-        const timeStr = now.toLocaleString('zh-CN', { hour12: false });
-        const statusEl = document.getElementById('timeInfo');
-        const errs = Object.keys(fetchErrors);
-        if (errs.length === 0) {
-            statusEl.textContent = timeStr + ' | 实时';
-        } else {
-            statusEl.textContent = timeStr + ' | ' + errs.join('/') + ' 异常';
-        }
+        const timeStr = now.getFullYear() + '/' +
+            String(now.getMonth() + 1).padStart(2, '0') + '/' +
+            String(now.getDate()).padStart(2, '0') + ' ' +
+            now.getHours().toString().padStart(2, '0') + ':' +
+            now.getMinutes().toString().padStart(2, '0') + ':' +
+            now.getSeconds().toString().padStart(2, '0');
+        const errStr = errorLog.length > 0 ? ' | ' + errorLog.join(' ') + '异常' : ' | 实时';
+        document.getElementById('timeInfo').textContent = timeStr + errStr;
 
-        // 调试信息
         const debugParts = [];
         if (prices.xau != null) debugParts.push('XAU=' + prices.xau.toFixed(2));
         if (prices.xag != null) debugParts.push('XAG=' + prices.xag.toFixed(3));
+        if (prices.xag != null) debugParts.push('XPT=' + (prices.xpt || 0).toFixed(1));
+        if (prices.xag != null) debugParts.push('XPD=' + (prices.xpd || 0).toFixed(1));
         if (prices.rate != null) debugParts.push('USD/CNY=' + prices.rate.toFixed(4));
         const snap = rongtongSnapshot.prices['黄金9999'];
         const delta = prices.xau != null ? ((prices.xau - rongtongSnapshot.xau) * (prices.rate || rongtongSnapshot.rate) / OZ_TO_G) : 0;
-        debugParts.push('黄金基准=' + snap.buy.toFixed(2) + ' 变动=' + (delta >= 0 ? '+' : '') + delta.toFixed(2) + ' 回购-15销售+10');
+        debugParts.push('黄金基准=(' + snap.buy.toFixed(2) + ') 变动=' + (delta >= 0 ? '+' : '') + delta.toFixed(2) + ' 调整=回购-15销售+10');
         document.getElementById('debugInfo').textContent = debugParts.join('  |  ');
     }
 
-    // 启动
+    // 启动: 立即执行一次, 然后每3秒刷新
     render();
     mainLoop();
     setInterval(mainLoop, 3000);
