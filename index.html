@@ -469,10 +469,10 @@
         document.getElementById('debugInfo').textContent = debugParts.join('  |  ');
     }
 
-    // 启动: 立即执行一次, 然后每3秒刷新
+    // 启动: 立即执行一次, 然后每秒刷新
     render();
     mainLoop();
-    setInterval(mainLoop, 3000);
+    setInterval(mainLoop, 1000);
     </script>
 </body>
 </html>
