@@ -262,35 +262,35 @@
     <script>
     const OZ_TO_G = 31.1034768;
 
-    // ============ 融通金基准快照 (XAU=4332.40时的实际价格) ============
+    // ============ 融通金基准快照 (XAU=4245.00时的实际价格) ============
     let rongtongSnapshot = {
-        xau: 4332.40,
-        xag: 70.13,
-        xpt: 1798.65,
-        xpd: 1351.73,
-        rate: 6.77,
+        xau: 4245.00,
+        xag: 68.50,
+        xpt: 1750.00,
+        xpd: 1320.00,
+        rate: 6.79,
         prices: {
-            '黄金9999': { buy: 940.66, sell: 941.18 },
-            '黄金T+D': { buy: 940.23, sell: 940.41 },
-            '黄 金':  { buy: 938.03, sell: 940.03 },
-            '白 银':  { buy: 15.509, sell: 15.609 },
-            '铂 金':  { buy: 384.60, sell: 386.10 },
-            '钯 金':  { buy: 291.30, sell: 292.80 },
+            '黄金9999': { buy: 920.00, sell: 920.52 },
+            '黄金T+D': { buy: 919.57, sell: 919.75 },
+            '黄 金':  { buy: 917.37, sell: 919.37 },
+            '白 银':  { buy: 14.980, sell: 15.080 },
+            '铂 金':  { buy: 375.00, sell: 376.50 },
+            '钯 金':  { buy: 285.00, sell: 286.50 },
             '铑金':   { buy: 1450.00, sell: 1450.00 },
             '铱':     { buy: 1100.0, sell: 1100.0 },
             '钌':     { buy: 240.0,  sell: 240.0 },
-            '白银T+D':{ buy: 16759,  sell: 16766 },
-            '铂金9995':{ buy: 445.00, sell: 448.20 },
-            '美黄金': { buy: 4351.10, sell: 4351.50 },
-            '美铂金': { buy: 1808.0, sell: 1808.5 },
-            '美钯金': { buy: 1356.0, sell: 1357.0 },
-            '美白银': { buy: 70.250, sell: 70.280 },
+            '白银T+D':{ buy: 16200,  sell: 16207 },
+            '铂金9995':{ buy: 435.00, sell: 438.20 },
+            '美黄金': { buy: 4245.00, sell: 4245.40 },
+            '美铂金': { buy: 1755.0, sell: 1755.5 },
+            '美钯金': { buy: 1325.0, sell: 1326.0 },
+            '美白银': { buy: 68.550, sell: 68.580 },
             '美铑金': { buy: 7800.00, sell: 7800.00 },
-            '伦敦金': { buy: 4339.31, sell: 4339.66 },
-            '伦敦银': { buy: 70.130, sell: 70.189 },
-            '伦敦铂': { buy: 1809.45, sell: 1815.45 },
-            '伦敦钯': { buy: 1354.50, sell: 1363.00 },
-            '美元':   { buy: 675.71, sell: 675.76 }
+            '伦敦金': { buy: 4242.00, sell: 4242.35 },
+            '伦敦银': { buy: 68.500, sell: 68.559 },
+            '伦敦铂': { buy: 1756.45, sell: 1762.45 },
+            '伦敦钯': { buy: 1321.50, sell: 1330.00 },
+            '美元':   { buy: 677.50, sell: 677.55 }
         }
     };
 
@@ -426,11 +426,14 @@
         let ok = true;
         errorLog = [];
         try {
-            // 使用 goldprice.org 获取金价 (更稳定)
-            const goldData = await fetchJson('https://data-asg.goldprice.org/dbXRates/USD').catch(function(e) { errorLog.push('金价API'); return null; });
-            if (goldData && goldData.items && goldData.items[0]) {
-                prices.xau = goldData.items[0].xauPrice;
-                prices.xag = goldData.items[0].xagPrice;
+            // 使用 Coinbase API 获取实时金价 (更可靠)
+            const goldData = await fetchJson('https://api.coinbase.com/v2/prices/XAU-USD/spot').catch(function(e) { errorLog.push('金价API'); return null; });
+            if (goldData && goldData.data) {
+                prices.xau = parseFloat(goldData.data.amount);
+            }
+            const silverData = await fetchJson('https://api.coinbase.com/v2/prices/XAG-USD/spot').catch(function(e) { return null; });
+            if (silverData && silverData.data) {
+                prices.xag = parseFloat(silverData.data.amount);
             }
             // 铂金钯金使用 gold-api (可能失败但不影响主要商品)
             const results = await Promise.all([
