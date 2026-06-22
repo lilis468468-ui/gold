@@ -426,17 +426,20 @@
         let ok = true;
         errorLog = [];
         try {
+            // 使用 goldprice.org 获取金价 (更稳定)
+            const goldData = await fetchJson('https://data-asg.goldprice.org/dbXRates/USD').catch(function(e) { errorLog.push('金价API'); return null; });
+            if (goldData && goldData.items && goldData.items[0]) {
+                prices.xau = goldData.items[0].xauPrice;
+                prices.xag = goldData.items[0].xagPrice;
+            }
+            // 铂金钯金使用 gold-api (可能失败但不影响主要商品)
             const results = await Promise.all([
-                fetchJson('https://api.gold-api.com/price/XAU').then(function(d) { return d.price; }).catch(function(e) { errorLog.push('XAU'); return null; }),
-                fetchJson('https://api.gold-api.com/price/XAG').then(function(d) { return d.price; }).catch(function(e) { errorLog.push('XAG'); return null; }),
-                fetchJson('https://api.gold-api.com/price/XPT').then(function(d) { return d.price; }).catch(function(e) { errorLog.push('XPT'); return null; }),
-                fetchJson('https://api.gold-api.com/price/XPD').then(function(d) { return d.price; }).catch(function(e) { errorLog.push('XPD'); return null; }),
+                fetchJson('https://api.gold-api.com/price/XPT').then(function(d) { return d.price; }).catch(function(e) { return null; }),
+                fetchJson('https://api.gold-api.com/price/XPD').then(function(d) { return d.price; }).catch(function(e) { return null; }),
                 fetchJson('https://api.exchangerate-api.com/v4/latest/USD').then(function(d) { return d.rates.CNY; }).catch(function(e) { errorLog.push('汇率'); return null; })
             ]);
 
-            const xau = results[0], xag = results[1], xpt = results[2], xpd = results[3], rate = results[4];
-            if (xau != null) prices.xau = xau;
-            if (xag != null) prices.xag = xag;
+            const xpt = results[0], xpd = results[1], rate = results[2];
             if (xpt != null) prices.xpt = xpt;
             if (xpd != null) prices.xpd = xpd;
             if (rate != null) prices.rate = rate;
