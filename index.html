@@ -426,12 +426,12 @@
         let ok = true;
         errorLog = [];
         try {
-            // 使用 Coinbase API 获取实时金价 (更可靠)
-            const goldData = await fetchJson('https://api.coinbase.com/v2/prices/XAU-USD/spot').catch(function(e) { errorLog.push('金价API'); return null; });
+            // 使用 Coinbase API + allorigins CORS代理 获取实时金价
+            const goldData = await fetchJson('https://api.allorigins.win/raw?url=https://api.coinbase.com/v2/prices/XAU-USD/spot').catch(function(e) { errorLog.push('金价API'); return null; });
             if (goldData && goldData.data) {
                 prices.xau = parseFloat(goldData.data.amount);
             }
-            const silverData = await fetchJson('https://api.coinbase.com/v2/prices/XAG-USD/spot').catch(function(e) { return null; });
+            const silverData = await fetchJson('https://api.allorigins.win/raw?url=https://api.coinbase.com/v2/prices/XAG-USD/spot').catch(function(e) { return null; });
             if (silverData && silverData.data) {
                 prices.xag = parseFloat(silverData.data.amount);
             }
